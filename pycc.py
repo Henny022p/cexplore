@@ -16,7 +16,7 @@ parser.add_argument('--charmap', action='store', help ='preproc charmap', requir
 
 args, remainder = parser.parse_known_args()
 '''
-repopath = "/pretrepos/pokeemerald/"
+repopath = "/repos/tmc/"
 agbccpath = "/agbcc_build/tools/"
 agbcc = agbccpath+ "agbcc/bin/agbcc"
 preproc = repopath+ "tools/preproc/preproc"
