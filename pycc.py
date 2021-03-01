@@ -8,7 +8,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Simplified CC1 frontend')
 
 parser.add_argument('--qinclude', action='append', help = 'Include Paths for iquote', required = False, dest='qinclude')
-parser.add_argument('--binclud                  e', action='append', help = 'Include Paths for Block Include', required = False, dest='binclude')
+parser.add_argument('--binclude', action='append', help = 'Include Paths for Block Include', required = False, dest='binclude')
 parser.add_argument('--cc1', action='store', help = '<Required> cc1 Path', required = False, dest='cc1')
 parser.add_argument('--version', action='store', help = 'Get Version String of cc1', required = False, dest='version')
 parser.add_argument('--preproc', action='store', help ='preproc path', required = False, dest='preproc')

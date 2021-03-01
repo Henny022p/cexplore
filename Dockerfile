@@ -14,4 +14,4 @@ COPY compiler-explorer /ce/
 RUN mkdir -p /scripts/
 COPY update-repo.sh /scripts/
 EXPOSE 10240
-ENTRYPOINT cd /ce && make EXTRA_ARGS='--language C'
+ENTRYPOINT cd /ce && make
