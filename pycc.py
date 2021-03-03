@@ -14,6 +14,7 @@ parser.add_argument('--version', action='store', help = 'Get Version String of c
 parser.add_argument('--preproc', action='store', help ='preproc path', required = False, dest='preproc')
 parser.add_argument('--charmap', action='store', help ='preproc charmap', required = False)
 parser.add_argument('-S', action='store_true', help='Ignore parameter as agbcc does not know it', required=False)
+parser.add_argument('-o', action='store', help = 'Output Assembly file', required = False, dest='destination')
 
 args, remainder = parser.parse_known_args()
 '''
@@ -44,11 +45,19 @@ cpp_args += [source, "-o", source+".i"]
 subprocess.call(cpp_args)
 if args.preproc and args.charmap:
     pprocess = subprocess.Popen([args.preproc, source+'.i', args.charmap], stdout=subprocess.PIPE)
-    subprocess.call([args.cc1] + remainder[0:-1], stdin=pprocess.stdout)
+    subprocess.call([args.cc1] + ['-o', args.destination +'.tmp']+  remainder[0:-1], stdin=pprocess.stdout)
 else:
     with open(source+'.i', 'r') as a:
-        subprocess.call([args.cc1] + remainder[0:-1], stdin=a)
+        subprocess.call([args.cc1] +['-o', args.destination+'.tmp']+ remainder[0:-1], stdin=a)
 
+# Postprocess assembly to be better suited for diff
+with open(args.destination+'.tmp','r') as file, open(args.destination,'w') as out:
+    for line in file:
+        if not line.strip(): # Remove all empty lines (TODO implement as filter?)
+            continue
+        if '@cond_branch' in line: # Remove cond_branch comment
+            line = line.replace('@cond_branch', '')
+        out.write(line)
 if os.path.exists(source+'.i'):
 	os.remove(source+'.i')
 '''

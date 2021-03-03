@@ -26,6 +26,8 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                 opcode, operand = instruction
                 if opcode.endswith('s'):
                     opcode = opcode[:-1]
+
+
                 rx_ry = re.search(r'r\d{1,2}-r\d{1,2}', operand, re.I)
                 if rx_ry:
                     rx_ry = rx_ry.group(0)
@@ -54,6 +56,24 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                     operands = operand.split(',')
                     if len(operands) == 2:
                         operand = operands[0] + ', ' + operand
+
+                # fix movs rX, #0 -> mov rX, #0x0
+                if opcode == 'mov':
+                    operands = operand.split(', ')
+                    if operands[1] == '#0':
+                        operand = operands[0] + ', #0x0'
+                # rsb rn, rn, #0 -> neg rn, rn
+                if opcode == 'rsb':
+                    operands = operand.split(', ')
+                    if operands[2] == '#0' and operands[0] == operands[1]:
+                        opcode = 'neg'
+                        operand = operands[0] + ', ' + operands[1]
+
                 line2 = '\t{}\t{}'.format(opcode, operand)
+        else:    
+            # Replace .4byte with .word
+            if '.4byte' in line2:
+                line2 = line2.replace('.4byte', '.word  ')
+
         f_dst.write(line2 + '\n')
 
