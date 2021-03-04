@@ -24,9 +24,14 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
             instruction = line2.split(maxsplit=1)
             if len(instruction) > 1:
                 opcode, operand = instruction
-                if opcode.endswith('s') and opcode != 'bls' and opcode != 'bhs': # Remove s suffix from most opcodes
+                if opcode.endswith('s') and opcode != 'bls' and opcode != 'bhs' and opcode != 'bcs': # Remove s suffix from most opcodes
                     opcode = opcode[:-1]
 
+                # Fix bhs -> bcs and blo -> bcc
+                if opcode == 'bhs':
+                    opcode = 'bcs'
+                if opcode == 'blo':
+                    opcode = 'bcc'
 
                 rx_ry = re.search(r'r\d{1,2}-r\d{1,2}', operand, re.I)
                 if rx_ry:
