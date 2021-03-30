@@ -57,10 +57,18 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                         if value != 0:
                             s = operand.split(dec_num, 1)
                             operand = '{}#-0x{:x}{}'.format(s[0], value, s[1])
+
+
                 if opcode in ('add', 'sub', 'lsl', 'lsr', 'asr', 'ror', 'and', 'orr', 'eor'):
                     operands = operand.split(',')
                     if len(operands) == 2:
                         operand = operands[0] + ', ' + operand
+
+                # Rename sb to r9
+                operands = operand.split(', ')
+                operands = map(lambda x: 'r9' if x=='sb' else x, operands)
+                operand = ', '.join(operands)
+
 
                 # fix movs rX, #0 -> mov rX, #0x0
                 if opcode == 'mov':
