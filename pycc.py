@@ -57,6 +57,8 @@ with open(args.destination+'.tmp','r') as file, open(args.destination,'w') as ou
             continue
         if '@cond_branch' in line: # Remove cond_branch comment
             line = line.replace('@cond_branch', '')
+        if '#24' in line:
+            line = line.replace('#24', '#0x18')
         out.write(line)
 if os.path.exists(source+'.i'):
 	os.remove(source+'.i')
