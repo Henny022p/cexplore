@@ -5,13 +5,14 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 COPY agbcc /agbcc
 RUN cd /agbcc && ./build.sh && ./install.sh /agbcc_build
+COPY compiler-explorer /ce/
+RUN cd /ce && make prereqs
 RUN mkdir -p /repos && cd /repos && git clone https://github.com/zeldaret/tmc.git
 RUN cd /repos/tmc && make setup
+RUN mkdir -p /scripts/
+COPY update-repo.sh /scripts/
 RUN mkdir -p /frontends
 COPY pycc.py /frontends/
 COPY pycat.py /frontends/
-COPY compiler-explorer /ce/
-RUN mkdir -p /scripts/
-COPY update-repo.sh /scripts/
 EXPOSE 10240
 ENTRYPOINT cd /ce && make
