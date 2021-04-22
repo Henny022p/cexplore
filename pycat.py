@@ -49,6 +49,10 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                 if opcode.startswith('b') and opcode not in ['bl', 'bx']:
                     jump_labels.append(operand)
 
+                # remove comments from ldr
+                if opcode == 'ldr':
+                    operand = operand.split('@')[0]
+
                 rx_ry = re.search(r'r\d{1,2}-r\d{1,2}', operand, re.I)
                 if rx_ry:
                     rx_ry = rx_ry.group(0)
@@ -107,8 +111,8 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
             if not prev_data_label:
                 line += '{}:\n'.format(label)
                 prev_data_label = label
-                data_labels[label] = '.data{}'.format(n_data_labels)
                 n_data_labels += 1
+                data_labels[label] = '.data{}'.format(n_data_labels)
             else:
                 data_labels[label] = '.data{}+{}'.format(n_data_labels, hex(4 * n_data_labels_group))
             n_data_labels_group += 1
