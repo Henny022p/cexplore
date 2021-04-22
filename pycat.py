@@ -83,10 +83,16 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                         operand = operands[0] + ', ' + operands[1]
 
                 line2 = '\t{}\t{}'.format(opcode, operand)
-        else:    
-            # Replace .4byte with .word
+        elif ':' in line2:
+            if '@' in line2:
+                line2 = line2.split('@')[0]
             if '.4byte' in line2:
-                line2 = line2.replace('.4byte', '.word  ')
+                thing = line2.split(' ')
+                label = thing[0]
+                value = thing[2]
+                if value.startswith('0x'):
+                    value = hex(int(value, 16))
+                line2 = '{}\n\t.word\t{}'.format(label, value)
 
         f_dst.write(line2 + '\n')
 
