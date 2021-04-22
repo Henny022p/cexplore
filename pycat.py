@@ -118,7 +118,10 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
             n_data_labels_group += 1
             value = thing[2]
             if value.startswith('0x'):
-                value = hex(int(value, 16))
+                value = int(value, 16)
+                if value >= 1 << 31:
+                    value = -((1 << 32) - value)
+                value = hex(value)
             line += '\t.word\t{}'.format(value)
         else:
             prev_data_label = None
@@ -127,7 +130,7 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
         outstring += line + '\n'
 
     for i, label in enumerate(jump_labels):
-        outstring = outstring.replace(label, '.L{}'.format(i))
+        outstring = outstring.replace(label, '.code{}'.format(i))
     for current, new in data_labels.items():
         outstring = outstring.replace(current, new)
     f_dst.write(outstring)
