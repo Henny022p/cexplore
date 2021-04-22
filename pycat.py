@@ -7,8 +7,8 @@ import re
 
 parser = argparse.ArgumentParser(description='Simplified "compiler" frontend, cats any input')
 
-parser.add_argument('--version', action='store_true', help = 'Get Version String of cc1', required = False, dest='version')
-parser.add_argument('-o', action='store', help = 'Output Assembly file', required = False, dest='destination')
+parser.add_argument('--version', action='store_true', help='Get Version String of cc1', required=False, dest='version')
+parser.add_argument('-o', action='store', help='Output Assembly file', required=False, dest='destination')
 args, remainder = parser.parse_known_args()
 
 if args.version:
@@ -18,13 +18,21 @@ if args.version:
 source = remainder[-1]
 
 with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
+    outstring = ''
+    jump_labels = []
+    data_labels = {}
+    prev_data_label = None
+    n_data_labels = 0
+    n_data_labels_group = 0
     for line in f_src:
-        line2 = line.strip()
-        if line2 and ':' not in line2 and not line2.startswith('@') and not line2.startswith('//'):
-            instruction = line2.split(maxsplit=1)
+        line = line.strip()
+        if line and ':' not in line and not line.startswith('@') and not line.startswith('//'):
+            instruction = line.split(maxsplit=1)
             if len(instruction) > 1:
                 opcode, operand = instruction
-                if opcode.endswith('s') and opcode != 'bls' and opcode != 'bhs' and opcode != 'bcs': # Remove s suffix from most opcodes
+
+                # Remove s suffix from most opcodes
+                if opcode.endswith('s') and opcode != 'bls' and opcode != 'bhs' and opcode != 'bcs':
                     opcode = opcode[:-1]
 
                 # Fix bhs -> bcs and blo -> bcc
@@ -32,6 +40,10 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                     opcode = 'bcs'
                 if opcode == 'blo':
                     opcode = 'bcc'
+
+                # find label to rename them later
+                if opcode.startswith('b') and opcode not in ['bl', 'bx']:
+                    jump_labels.append(operand)
 
                 rx_ry = re.search(r'r\d{1,2}-r\d{1,2}', operand, re.I)
                 if rx_ry:
@@ -58,7 +70,6 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                             s = operand.split(dec_num, 1)
                             operand = '{}#-0x{:x}{}'.format(s[0], value, s[1])
 
-
                 if opcode in ('add', 'sub', 'lsl', 'lsr', 'asr', 'ror', 'and', 'orr', 'eor'):
                     operands = operand.split(',')
                     if len(operands) == 2:
@@ -66,9 +77,8 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
 
                 # Rename sb to r9
                 operands = operand.split(', ')
-                operands = map(lambda x: 'r9' if x=='sb' else x, operands)
+                operands = map(lambda x: 'r9' if x == 'sb' else x, operands)
                 operand = ', '.join(operands)
-
 
                 # fix movs rX, #0 -> mov rX, #0x0
                 if opcode == 'mov':
@@ -82,17 +92,34 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                         opcode = 'neg'
                         operand = operands[0] + ', ' + operands[1]
 
-                line2 = '\t{}\t{}'.format(opcode, operand)
-        elif ':' in line2:
-            if '@' in line2:
-                line2 = line2.split('@')[0]
-            if '.4byte' in line2:
-                thing = line2.split(' ')
-                label = thing[0]
-                value = thing[2]
-                if value.startswith('0x'):
-                    value = hex(int(value, 16))
-                line2 = '{}\n\t.word\t{}'.format(label, value)
+                line = '\t{}\t{}'.format(opcode, operand)
+        elif ':' in line:
+            if '@' in line:
+                line = line.split('@')[0]
+        if '.4byte' in line:
+            thing = line.split(' ')
+            label = thing[0].strip(':')
+            line = ''
+            if not prev_data_label:
+                line += '{}:\n'.format(label)
+                prev_data_label = label
+                data_labels[label] = '.data{}'.format(n_data_labels)
+                n_data_labels += 1
+            else:
+                data_labels[label] = '.data{}+{}'.format(n_data_labels, hex(4 * n_data_labels_group))
+            n_data_labels_group += 1
+            value = thing[2]
+            if value.startswith('0x'):
+                value = hex(int(value, 16))
+            line += '\t.word\t{}'.format(value)
+        else:
+            prev_data_label = None
+            n_data_labels_group = 0
 
-        f_dst.write(line2 + '\n')
+        outstring += line + '\n'
 
+    for i, label in enumerate(jump_labels):
+        outstring = outstring.replace(label, '.L{}'.format(i))
+    for current, new in data_labels.items():
+        outstring = outstring.replace(current, new)
+    f_dst.write(outstring)
