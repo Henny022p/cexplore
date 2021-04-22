@@ -26,7 +26,11 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
     n_data_labels_group = 0
     for line in f_src:
         line = line.strip()
-        if line and ':' not in line and not line.startswith('@') and not line.startswith('//'):
+        if 'thumb_func_start' in line:
+            _, name = line.split()
+            line = '\t.align 2, 0\n\t.global {name}\n\t.thumb\n\t.thumb_func\n\t.type {name}, function' \
+                .format(name=name)
+        elif line and ':' not in line and not line.startswith('@') and not line.startswith('//'):
             instruction = line.split(maxsplit=1)
             if len(instruction) > 1:
                 opcode, operand = instruction
