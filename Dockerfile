@@ -6,13 +6,10 @@ RUN apt-get update \
 COPY agbcc /agbcc
 RUN cd /agbcc && ./build.sh && ./install.sh /agbcc_build
 COPY compiler-explorer /ce/
-RUN cd /ce && make prereqs
-RUN mkdir -p /repos && cd /repos && git clone https://github.com/zeldaret/tmc.git
-RUN cd /repos/tmc && make setup
-RUN mkdir -p /scripts/
-COPY update-repo.sh /scripts/
-RUN mkdir -p /frontends
-COPY pycc.py /frontends/
-COPY pycat.py /frontends/
+RUN cd /ce && make prereqs webpack WEBPACK_ARGS="-p"
+RUN mkdir -p /repos && cd /repos && git clone https://github.com/zeldaret/tmc.git && cd tmc && make setup
+COPY update-repo.sh /scripts/update-repo.sh
+COPY pycc.py /frontends/pycc.py
+COPY pycat.py /frontends/pycat.py
 EXPOSE 10240
-ENTRYPOINT cd /ce && make
+CMD cd /ce && ./node_modules/.bin/supervisor -w app.js,lib,etc/config -e 'js|node|properties|yaml' --exec /usr/bin/node  -- -r esm ./app.js

@@ -9,7 +9,7 @@ publish:
 
 
 build: cexplore_setup
-	docker build -t octorock/cexplore:latest .
+	docker build -t henny022p/cexplore-tmc:latest .
 
 
 cexplore_setup:
