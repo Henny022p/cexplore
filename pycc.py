@@ -81,6 +81,9 @@ with open(args.destination + '.tmp', 'r') as file, open(args.destination, 'w') a
             if re.match(r'\.L\d+:', line):
                 last_label = line.strip(':')
 
+            if ', #0]' in line:
+                line = line.replace(', #0]', ']')
+
             if '.word' in line:
                 if last_label not in data_labels:
                     n_data_labels += 1
