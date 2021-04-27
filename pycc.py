@@ -58,6 +58,7 @@ with open(args.destination + '.tmp', 'r') as file, open(args.destination, 'w') a
     outstring = ''
     jump_labels = []
     switch_labels = []
+    is_jumptable = False
     last_label = None
     data_labels = {}
     n_data_labels = 0
@@ -91,7 +92,10 @@ with open(args.destination + '.tmp', 'r') as file, open(args.destination, 'w') a
                     data_labels[last_label] = '_data{}'.format(n_data_labels)
                 data = line.split('\t')[2]
                 if data.startswith('.L'):
-                    switch_labels.append(data)
+                    if is_jumptable:
+                        switch_labels.append(data)
+                    else:
+                        is_jumptable = True
             outstring += line + '\n'
 
     for i, label in enumerate(jump_labels):
