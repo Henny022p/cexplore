@@ -57,6 +57,7 @@ else:
 with open(args.destination + '.tmp', 'r') as file, open(args.destination, 'w') as out:
     outstring = ''
     jump_labels = []
+    switch_labels = []
     last_label = None
     data_labels = {}
     n_data_labels = 0
@@ -88,10 +89,14 @@ with open(args.destination + '.tmp', 'r') as file, open(args.destination, 'w') a
                 if last_label not in data_labels:
                     n_data_labels += 1
                     data_labels[last_label] = '_data{}'.format(n_data_labels)
-
+                data = line.split('\t')[2]
+                if data.startswith('.L'):
+                    switch_labels.append(data)
             outstring += line + '\n'
 
     for i, label in enumerate(jump_labels):
+        outstring = outstring.replace(label, '.code{}'.format(i))
+    for i, label in enumerate(switch_labels):
         outstring = outstring.replace(label, '.code{}'.format(i))
     for current, new in data_labels.items():
         outstring = outstring.replace(current, new)

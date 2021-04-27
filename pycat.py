@@ -21,6 +21,7 @@ source = remainder[-1]
 with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
     outstring = ''
     jump_labels = []
+    switch_labels = []
     data_labels = {}
     prev_data_label = None
     last_label = None
@@ -129,6 +130,8 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                     value = hex(value)
                 line += '\t.word\t{}'.format(value)
             else:  # switch jumptable
+                label = line.split('\t')[2]
+                switch_labels.append(label)
                 line = line.replace('.4byte', '.word')
                 if not last_label:
                     print('found data without label: {}'.format(line), file=sys.stderr)
@@ -143,6 +146,8 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
 
     for i, label in enumerate(jump_labels):
         outstring = outstring.replace(label, '.code{}'.format(i))
+    for i, label in enumerate(switch_labels):
+        outstring = outstring.replace(label, '.case{}'.format(i))
     for current, new in data_labels.items():
         outstring = outstring.replace(current, new)
     f_dst.write(outstring)
