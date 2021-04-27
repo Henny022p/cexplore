@@ -73,7 +73,8 @@ with open(args.destination + '.tmp', 'r') as file, open(args.destination, 'w') a
             try:
                 opcode, operand = line.split(maxsplit=1)
                 # find label to rename them later
-                if opcode.startswith('b') and opcode not in ['bl', 'bx']:
+                if opcode in ['b', 'beq', 'bne', 'bgt', 'blt', 'bge', 'ble', 'bcs', 'bhs', 'bcc', 'blo', 'bmi', 'bpl',
+                              'bvs', 'bvc', 'bhi', 'bls']:
                     jump_labels.append(operand)
                 line = '\t{}\t{}'.format(opcode, operand)
             except ValueError:

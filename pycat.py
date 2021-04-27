@@ -51,7 +51,8 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                     opcode = 'bcc'
 
                 # find label to rename them later
-                if opcode.startswith('b') and opcode not in ['bl', 'bx']:
+                if opcode in ['b', 'beq', 'bne', 'bgt', 'blt', 'bge', 'ble', 'bcs', 'bhs', 'bcc', 'blo', 'bmi', 'bpl',
+                              'bvs', 'bvc', 'bhi', 'bls']:
                     jump_labels.append(operand)
 
                 # remove comments from ldr
