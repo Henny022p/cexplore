@@ -97,7 +97,7 @@ with open(args.destination + '.tmp', 'r') as file, open(args.destination, 'w') a
     for i, label in enumerate(jump_labels):
         outstring = outstring.replace(label, '.code{}'.format(i))
     for i, label in enumerate(switch_labels):
-        outstring = outstring.replace(label, '.code{}'.format(i))
+        outstring = outstring.replace(label, '.case{}'.format(i))
     for current, new in data_labels.items():
         outstring = outstring.replace(current, new)
     out.write(outstring)
