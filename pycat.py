@@ -4,6 +4,7 @@ import os
 import argparse
 import shutil
 import re
+import sys
 
 parser = argparse.ArgumentParser(description='Simplified "compiler" frontend, cats any input')
 
@@ -22,10 +23,13 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
     jump_labels = []
     data_labels = {}
     prev_data_label = None
+    last_label = None
     n_data_labels = 0
     n_data_labels_group = 0
     for line in f_src:
         line = line.strip()
+        if '@' in line:
+            line = line.split('@')[0].strip()
         if 'thumb_func_start' in line:
             _, name = line.split()
             line = '\t.align 2, 0\n\t.global {name}\n\t.thumb\n\t.thumb_func\n\t.type {name}, function' \
@@ -102,27 +106,35 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
 
                 line = '\t{}\t{}'.format(opcode, operand)
         elif ':' in line:
-            if '@' in line:
-                line = line.split('@')[0]
+            last_label = line.strip(':')
+
         if '.4byte' in line:
-            thing = line.split(' ')
-            label = thing[0].strip(':')
-            line = ''
-            if not prev_data_label:
-                line += '{}:\n'.format(label)
-                prev_data_label = label
-                n_data_labels += 1
-                data_labels[label] = '.data{}'.format(n_data_labels)
-            else:
-                data_labels[label] = '.data{}+{}'.format(n_data_labels, hex(4 * n_data_labels_group))
-            n_data_labels_group += 1
-            value = thing[2]
-            if value.startswith('0x'):
-                value = int(value, 16)
-                if value >= 1 << 31:
-                    value = -((1 << 32) - value)
-                value = hex(value)
-            line += '\t.word\t{}'.format(value)
+            if ':' in line:
+                thing = line.split(' ')
+                label = thing[0].strip(':')
+                line = ''
+                if not prev_data_label:
+                    line += '{}:\n'.format(label)
+                    prev_data_label = label
+                    n_data_labels += 1
+                    data_labels[label] = '.data{}'.format(n_data_labels)
+                else:
+                    data_labels[label] = '.data{}+{}'.format(n_data_labels, hex(4 * n_data_labels_group))
+                n_data_labels_group += 1
+                value = thing[2]
+                if value.startswith('0x'):
+                    value = int(value, 16)
+                    if value >= 1 << 31:
+                        value = -((1 << 32) - value)
+                    value = hex(value)
+                line += '\t.word\t{}'.format(value)
+            else:  # switch jumptable
+                line = line.replace('.4byte', '.word')
+                if not last_label:
+                    print('found data without label: {}'.format(line), file=sys.stderr)
+                if last_label and last_label not in data_labels:
+                    n_data_labels += 1
+                    data_labels[last_label] = '.data{}'.format(n_data_labels)
         else:
             prev_data_label = None
             n_data_labels_group = 0
