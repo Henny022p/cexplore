@@ -117,9 +117,9 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                     line += '{}:\n'.format(label)
                     prev_data_label = label
                     n_data_labels += 1
-                    data_labels[label] = '.data{}'.format(n_data_labels)
+                    data_labels[label] = '_data{}'.format(n_data_labels)
                 else:
-                    data_labels[label] = '.data{}+{}'.format(n_data_labels, hex(4 * n_data_labels_group))
+                    data_labels[label] = '_data{}+{}'.format(n_data_labels, hex(4 * n_data_labels_group))
                 n_data_labels_group += 1
                 value = thing[2]
                 if value.startswith('0x'):
@@ -134,7 +134,7 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                     print('found data without label: {}'.format(line), file=sys.stderr)
                 if last_label and last_label not in data_labels:
                     n_data_labels += 1
-                    data_labels[last_label] = '.data{}'.format(n_data_labels)
+                    data_labels[last_label] = '_data{}'.format(n_data_labels)
         else:
             prev_data_label = None
             n_data_labels_group = 0

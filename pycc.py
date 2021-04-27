@@ -87,7 +87,7 @@ with open(args.destination + '.tmp', 'r') as file, open(args.destination, 'w') a
             if '.word' in line:
                 if last_label not in data_labels:
                     n_data_labels += 1
-                    data_labels[last_label] = '.data{}'.format(n_data_labels)
+                    data_labels[last_label] = '_data{}'.format(n_data_labels)
 
             outstring += line + '\n'
 
