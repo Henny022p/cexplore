@@ -102,7 +102,7 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
                 # rsb rn, rn, #0 -> neg rn, rn
                 if opcode == 'rsb':
                     operands = operand.split(', ')
-                    if operands[2] == '#0' and operands[0] == operands[1]:
+                    if operands[2] == '#0':
                         opcode = 'neg'
                         operand = operands[0] + ', ' + operands[1]
 
