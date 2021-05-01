@@ -107,6 +107,7 @@ with open(args.destination + '.tmp', 'r') as file, open(args.destination, 'w') a
         outstring = re.sub(label+'$', '.case{}'.format(i), outstring, flags=re.MULTILINE)
     for current, new in data_labels.items():
         outstring = outstring.replace(current+':', new+':')
+        outstring = outstring.replace(current+'+', new+'+')
         outstring = re.sub(current+'$', new, outstring, flags=re.MULTILINE)
     out.write(outstring)
 if os.path.exists(source + '.i'):
