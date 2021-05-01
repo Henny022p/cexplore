@@ -146,9 +146,12 @@ with open(source, 'r') as f_src, open(args.destination, 'w') as f_dst:
         outstring += line + '\n'
 
     for i, label in enumerate(jump_labels):
-        outstring = outstring.replace(label, '.code{}'.format(i))
+        outstring = outstring.replace(label+':', '.code{}:'.format(i))
+        outstring = re.sub(label+'$', '.code{}'.format(i), outstring, flags=re.MULTILINE)
     for i, label in enumerate(switch_labels):
-        outstring = outstring.replace(label, '.case{}'.format(i))
+        outstring = outstring.replace(label+':', '.case{}:'.format(i))
+        outstring = re.sub(label+'$', '.case{}'.format(i), outstring, flags=re.MULTILINE)
     for current, new in data_labels.items():
-        outstring = outstring.replace(current, new)
+        outstring = outstring.replace(current+':', new+':')
+        outstring = re.sub(current+'$', new, outstring, flags=re.MULTILINE)
     f_dst.write(outstring)
