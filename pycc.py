@@ -66,7 +66,9 @@ with open(args.destination + '.tmp', 'r') as file, open(args.destination, 'w') a
         line = line.strip()
         if line:
             if '@cond_branch' in line:  # Remove cond_branch comment
-                line = line.replace('@cond_branch', '').strip()
+                line = line.split('@cond_branch')[0]
+            if '@long jump' in line:  # Remove long jump comment
+                line = line.split('@long jump')[0]
             if '#24' in line:
                 line = line.replace('#24', '#0x18')
 
