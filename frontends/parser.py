@@ -2,7 +2,7 @@ import antlr4
 from antlr.ASMLexer import ASMLexer
 from antlr.ASMParser import ASMParser
 from antlr.ASMVisitor import ASMVisitor
-from typing import List, Optional
+from typing import List, Optional, TextIO
 from dataclasses import dataclass
 
 
@@ -639,10 +639,174 @@ class ASTGenerator(ASMVisitor):
         return MOV(rd, rm)
 
     def visitAlign(self, ctx: ASMParser.AlignContext):
-        return Directive(ctx.getText())
+        return Directive('.align 2, 0')
+
+
+class ASTVisitor:
+    def visit(self, node: ASTNode):
+        name = type(node).__name__
+        return getattr(self, f'visit_{name.lower()}')(node)
+
+    def visit_asmfile(self, asmfile: ASMFile):
+        ret = []
+        for function in asmfile.functions:
+            ret.append(self.visit(function))
+        return ret
+
+    def visit_function(self, function: Function):
+        ret = []
+        for instruction in function.instructions:
+            ret.append(self.visit(instruction))
+        return ret
+
+    def instruction(self, instruction: Instruction):
+        pass
+
+    def operation(self, operation: Operation):
+        return self.instruction(operation)
+
+    def branch(self, branch: Branch):
+        return self.instruction(branch)
+
+    def visit_label(self, label: LABEL):
+        return self.instruction(label)
+
+    def visit_data(self, data: DATA):
+        return self.instruction(data)
+
+    def visit_push(self, push: PUSH):
+        return self.instruction(push)
+
+    def visit_pop(self, pop: POP):
+        return self.instruction(pop)
+
+    def visit_add(self, add: ADD):
+        return self.operation(add)
+
+    def visit_sub(self, sub: SUB):
+        return self.operation(sub)
+
+    def visit_neg(self, neg: NEG):
+        return self.instruction(neg)
+
+    def visit_mul(self, mul: MUL):
+        return self.instruction(mul)
+
+    def visit_and(self, land: AND):
+        return self.operation(land)
+
+    def visit_orr(self, orr: ORR):
+        return self.operation(orr)
+
+    def visit_eor(self, eor: EOR):
+        return self.operation(eor)
+
+    def visit_lsl(self, lsl: LSL):
+        return self.operation(lsl)
+
+    def visit_lsr(self, lsr: LSR):
+        return self.operation(lsr)
+
+    def visit_asl(self, asl: ASL):
+        return self.operation(asl)
+
+    def visit_asr(self, asr: ASR):
+        return self.operation(asr)
+
+    def visit_ldr_pc(self, ldr_pc: LDR_PC):
+        return self.instruction(ldr_pc)
+
+    def visit_ldr(self, ldr: LDR):
+        return self.instruction(ldr)
+
+    def visit_str(self, store: STR):
+        return self.instruction(store)
+
+    def visit_bl(self, bl: BL):
+        return self.instruction(bl)
+
+    def visit_bx(self, bx: BX):
+        return self.instruction(bx)
+
+    def visit_b(self, b: B):
+        return self.branch(b)
+
+    def visit_beq(self, beq: BEQ):
+        return self.branch(beq)
+
+    def visit_bne(self, bne: BNE):
+        return self.branch(bne)
+
+    def visit_bhs(self, bhs: BHS):
+        return self.branch(bhs)
+
+    def visit_blo(self, blo: BLO):
+        return self.branch(blo)
+
+    def visit_bmi(self, bmi: BMI):
+        return self.branch(bmi)
+
+    def visit_bpl(self, bpl: BPL):
+        return self.branch(bpl)
+
+    def visit_bvs(self, bvs: BVS):
+        return self.branch(bvs)
+
+    def visit_bvc(self, bvc: BVC):
+        return self.branch(bvc)
+
+    def visit_bhi(self, bhi: BHI):
+        return self.branch(bhi)
+
+    def visit_bls(self, bls: BLS):
+        return self.branch(bls)
+
+    def visit_bge(self, bge: BGE):
+        return self.branch(bge)
+
+    def visit_blt(self, blt: BLT):
+        return self.branch(blt)
+
+    def visit_bgt(self, bgt: BGT):
+        return self.branch(bgt)
+
+    def visit_ble(self, ble: BLE):
+        return self.branch(ble)
+
+    def visit_cmp(self, cmp: CMP):
+        return self.instruction(cmp)
+
+    def visit_cmn(self, cmn: CMN):
+        return self.instruction(cmn)
+
+    def visit_mov(self, mov: MOV):
+        return self.instruction(mov)
+
+    def visit_directive(self, directive: Directive):
+        return self.instruction(directive)
+
+
+class ASTDump(ASTVisitor):
+    file: TextIO
+
+    def __init__(self, file: TextIO):
+        self.file = file
+
+    def visit_function(self, function: Function):
+        self.file.write(f'\tthumb_func_start {function.name}\n{function.name}:\n')
+        super(ASTDump, self).visit_function(function)
+
+    def visit_label(self, label: LABEL):
+        self.file.write(f'{label.name}:\n')
+        pass
+
+    def instruction(self, instruction: Instruction):
+        self.file.write(f'\t{instruction}\n')
 
 
 if __name__ == '__main__':
     tree, successful = parse('test2.s')
     file = ASTGenerator().visit(tree)
+    with open('out.s', 'w') as outfile:
+        ASTDump(outfile).visit(file)
     pass
