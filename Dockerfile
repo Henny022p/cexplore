@@ -1,4 +1,8 @@
-FROM devkitpro/devkitarm
+FROM devkitpro/toolchain-base
+
+RUN dkp-pacman -Syyu --noconfirm gba-dev && \
+    dkp-pacman -Scc --noconfirm
+ENV DEVKITARM=${DEVKITPRO}/devkitARM
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get -y install apt-transport-https wget dirmngr build-essential git binutils-arm-none-eabi libsndfile1-dev libpng-dev python3 && curl -sL https://deb.nodesource.com/setup_12.x | bash - && apt-get -y install nodejs \
