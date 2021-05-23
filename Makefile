@@ -1,19 +1,16 @@
-.PHONY: default build publish cexplore_setup
+.PHONY: default build run antlr
 
-default: build publish
+default: build
 
-
-publish:
-	docker container stop cexplore || true && docker container rm cexplore || true
-	docker container run -d --name "cexplore" --restart=always -it -p 10240:10240 octorock/cexplore:latest
-
-
-build: cexplore_setup
+build: antlr
 	docker build -t henny022p/cexplore-tmc:latest .
 
+run:
+	docker container stop cexplore || true && docker container rm cexplore || true
+	docker container run -d --name "cexplore" --restart=always -it -p 10240:10240 henny022p/cexplore-tmc:latest
 
-cexplore_setup:
-	rm compiler-explorer/etc/config/*.properties
-	cp c.local.properties compiler-explorer/etc/config/
-	cp assembly.local.properties compiler-explorer/etc/config/
-	
+antlr:
+	cd frontends && java -jar /usr/share/java/antlr-4.9.2-complete.jar -o antlr ASM.g4 -no-listener -visitor -Dlanguage=Python3
+
+clean:
+	rm -r frontends/antlr
