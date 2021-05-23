@@ -447,7 +447,10 @@ class ASTGenerator(ASMVisitor):
             instructions.append(linep)
         return Function(name, instructions)
 
-    def visitFunction_header(self, ctx: ASMParser.Function_headerContext):
+    def visitFunction_header1(self, ctx: ASMParser.Function_header1Context):
+        return ctx.name.text
+
+    def visitFunction_header2(self, ctx: ASMParser.Function_header2Context):
         return ctx.name.text
 
     def visitPush_multiple(self, ctx: ASMParser.Push_multipleContext):
@@ -466,13 +469,13 @@ class ASTGenerator(ASMVisitor):
         return LABEL(ctx.name.text)
 
     def visitData1(self, ctx: ASMParser.Data1Context):
-        return DATA(1, ctx.WORD().symbol.text)
+        return DATA(1, ctx.const.text)
 
     def visitData2(self, ctx: ASMParser.Data2Context):
-        return DATA(2, ctx.WORD().symbol.text)
+        return DATA(2, ctx.const.text)
 
     def visitData4(self, ctx: ASMParser.Data4Context):
-        return DATA(4, ctx.WORD().symbol.text)
+        return DATA(4, ctx.const.text)
 
     def operation(self, ctx, cls):
         rd = self.visit(ctx.rd)
@@ -640,6 +643,12 @@ class ASTGenerator(ASMVisitor):
 
     def visitAlign(self, ctx: ASMParser.AlignContext):
         return Directive('.align 2, 0')
+
+    def visitDir_code(self, ctx: ASMParser.Dir_codeContext):
+        return Directive('')
+
+    def visitDir_size(self, ctx: ASMParser.Dir_sizeContext):
+        return Directive('')
 
 
 class ASTVisitor:

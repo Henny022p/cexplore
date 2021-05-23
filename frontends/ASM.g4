@@ -2,7 +2,9 @@ grammar ASM;
 
 asmfile: (function | directive)+ EOF;
 function: function_header line+;
-function_header: 'thumb_func_start' name=WORD WORD ':';
+function_header: function_header1 | function_header2;
+function_header1: 'thumb_func_start' name=WORD WORD ':';
+function_header2: align	'.globl' name=WORD '.type' WORD COMMA WORD '.thumb_func' WORD ':';
 
 line: (instruction | directive | label);
 label: name=WORD ':';
@@ -72,20 +74,22 @@ strb_offset: STRB rt=reg COMMA '[' rn=reg (COMMA rm=regimm)? ']';
 cmp: CMP rn=reg COMMA rm=regimm;
 cmn: CMN rn=reg COMMA rm=regimm;
 
-directive: align | data | include | syntax | text;
-align: '.align' '2' COMMA '0';
+directive: align | data | include | syntax | dir_code | dir_gcc | dir_size;
+align: '.align' WORD COMMA WORD;
+
+dir_code: '.code' WORD;
+dir_gcc: '.gcc2_compiled.:' WORD;
+dir_size: '.size' WORD COMMA WORD;
 
 data: data1 | data2 | data4;
-data1: DATA1 WORD;
-data2: DATA2 WORD;
-data4: DATA4 WORD;
+data1: DATA1 const=WORD;
+data2: DATA2 const=WORD;
+data4: DATA4 const=WORD;
 
 include: '.include' '"' path '"';
-path: WORD ('/' WORD)+ '.' WORD;
+path: '/'? WORD (('/' | '\\')? WORD)+;
 
 syntax: '.syntax' ('divided' | 'unified');
-
-text: '.text';
 
 regimm: reg|imm;
 reg: REG;
@@ -144,6 +148,6 @@ COMMA: ',';
 REG: ('r' [0-9]) | 'lr' | 'pc' | 'sl' | 'sb' | 'ip' | 'sp';
 IMM: '#' '-'? '0x'? [0-9a-fA-F]+;
 COMMENT: ('@' .*? NL) -> skip;
-WORD: [A-Za-z0-9_-]+;
+WORD: [A-Za-z0-9._-]+;
 WS: (' ' | '\t') -> skip;
 NL: ('\r' | '\r'?'\n') -> skip;

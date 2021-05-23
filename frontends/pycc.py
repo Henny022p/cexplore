@@ -43,14 +43,17 @@ if args.binclude:
     for b in args.binclude:
         cpp_args += ["-I", b]
 
+thing = remainder[:-1]
+thing.remove('-g')
+
 cpp_args += [source, "-o", source + ".i"]
 subprocess.call(cpp_args)
 if args.preproc and args.charmap:
     pprocess = subprocess.Popen([args.preproc, source + '.i', args.charmap], stdout=subprocess.PIPE)
-    subprocess.call([args.cc1] + ['-o', args.destination + '.tmp'] + remainder[0:-1], stdin=pprocess.stdout)
+    subprocess.call([args.cc1] + ['-o', args.destination + '.tmp'] + thing, stdin=pprocess.stdout)
 else:
     with open(source + '.i', 'r') as a:
-        subprocess.call([args.cc1] + ['-o', args.destination + '.tmp'] + remainder[0:-1], stdin=a)
+        subprocess.call([args.cc1] + ['-o', args.destination + '.tmp'] + thing, stdin=a)
 
 tree, success = parse(args.destination + '.tmp')
 if not success:
