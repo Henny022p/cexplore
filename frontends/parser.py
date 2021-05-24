@@ -3,7 +3,8 @@ from antlr.ASMLexer import ASMLexer
 from antlr.ASMParser import ASMParser
 from antlr.ASMVisitor import ASMVisitor
 from typing import List, Optional, TextIO
-from dataclasses import dataclass
+from weakref import ref
+from enum import Enum
 
 
 def parse(filename: str) -> (ASMParser.AsmfileContext, bool):
@@ -86,7 +87,20 @@ class ASTNode:
 
 
 class Instruction(ASTNode):
-    pass
+    _prev: Optional[ref['Instruction']]
+    _next: Optional[ref['Instruction']]
+
+    @property
+    def prev(self) -> Optional['Instruction']:
+        if self._prev:
+            return self._prev()
+        return None
+
+    @property
+    def next(self) -> Optional['Instruction']:
+        if self._next:
+            return self._next()
+        return None
 
 
 class Operation(Instruction):
@@ -109,9 +123,20 @@ class Operation(Instruction):
         return str(self)
 
 
-@dataclass
+class LabelType(Enum):
+    CODE = 0
+    DATA = 1
+    CASE = 2
+    OTHER = 3
+
+
 class LABEL(Instruction):
     name: str
+    type: LabelType
+
+    def __init__(self, name: str):
+        self.name = name
+        self.type = LabelType.OTHER
 
     def __str__(self):
         return f'{self.name}:'
@@ -120,21 +145,36 @@ class LABEL(Instruction):
         return str(self)
 
 
-@dataclass
 class DATA(Instruction):
     size: int
     data: str
+    _target: Optional[ref[LABEL]]
+
+    def __init__(self, size: int, data: str):
+        self.size = size
+        self.data = data
+        self._target = None
+
+    @property
+    def target(self) -> Optional[LABEL]:
+        if self._target:
+            return self._target()
+        return None
 
     def __str__(self):
+        if self.target:
+            return f'.{self.size}byte {self.target.name}'
         return f'.{self.size}byte {self.data}'
 
     def __repr__(self):
         return str(self)
 
 
-@dataclass
 class PUSH(Instruction):
     registers: List[Register]
+
+    def __init__(self, registers: List[Register]):
+        self.registers = registers
 
     def __str__(self):
         return f'push {{{", ".join([str(reg) for reg in self.registers])}}}'
@@ -143,9 +183,11 @@ class PUSH(Instruction):
         return str(self)
 
 
-@dataclass
 class POP(Instruction):
     registers: List[Register]
+
+    def __init__(self, registers: List[Register]):
+        self.registers = registers
 
     def __str__(self):
         return f'pop {{{", ".join([str(reg) for reg in self.registers])}}}'
@@ -162,10 +204,13 @@ class SUB(Operation):
     mnemonic = 'sub'
 
 
-@dataclass
 class NEG(Instruction):
     rd: Register
     rm: Register
+
+    def __init__(self, rd: Register, rm: Register):
+        self.rd = rd
+        self.rm = rm
 
     def __str__(self):
         return f'neg {self.rd}, {self.rm}'
@@ -225,12 +270,17 @@ class ASR(Operation):
     mnemonic = 'asr'
 
 
-@dataclass
 class LDR_PC(Instruction):
     rt: Register
     label: str
     size: int = 4
     signed: bool = False
+
+    def __init__(self, rt: Register, label: str, size: int = 4, signed: bool = False):
+        self.rt = rt
+        self.label = label
+        self.size = size
+        self.signed = signed
 
     def __str__(self):
         return f'ldr{suffix("s", self.signed)}{suffix("b", self.size == 1)}{suffix("h", self.size == 2)} {self.rt}, {self.label}'
@@ -239,13 +289,19 @@ class LDR_PC(Instruction):
         return str(self)
 
 
-@dataclass
 class LDR(Instruction):
     rt: Register
     rn: Register
     rm: Optional[Register]
     size: int = 4
     signed: bool = False
+
+    def __init__(self, rt: Register, rn: Register, rm: Optional[Register], size: int = 4, signed: bool = False):
+        self.rt = rt
+        self.rn = rn
+        self.rm = rm
+        self.size = size
+        self.signed = signed
 
     def __str__(self):
         return f'ldr{suffix("s", self.signed)}{suffix("b", self.size == 1)}{suffix("h", self.size == 2)} {self.rt}, ' \
@@ -255,12 +311,17 @@ class LDR(Instruction):
         return str(self)
 
 
-@dataclass
 class STR(Instruction):
     rt: Register
     rn: Register
     rm: Optional[Register]
     size: int = 4
+
+    def __init__(self, rt: Register, rn: Register, rm: Optional[Register], size: int = 4):
+        self.rt = rt
+        self.rn = rn
+        self.rm = rm
+        self.size = size
 
     def __str__(self):
         return f'str{suffix("b", self.size == 1)}{suffix("h", self.size == 2)} {self.rt}, ' \
@@ -270,9 +331,11 @@ class STR(Instruction):
         return str(self)
 
 
-@dataclass
 class BL(Instruction):
     function: str
+
+    def __init__(self, function: str):
+        self.function = function
 
     def __str__(self):
         return f'bl {self.function}'
@@ -281,9 +344,11 @@ class BL(Instruction):
         return str(self)
 
 
-@dataclass
 class BX(Instruction):
     rm: Register
+
+    def __init__(self, rm: Register):
+        self.rm = rm
 
     def __str__(self):
         return f'bx {self.rm}'
@@ -293,11 +358,25 @@ class BX(Instruction):
 
 
 class Branch(Instruction):
-    label: str
+    _label: str
     condition: str
+    _target: Optional[ref[LABEL]]
 
     def __init__(self, label: str):
-        self.label = label
+        self._label = label
+        self._target = None
+
+    @property
+    def target(self) -> Optional[LABEL]:
+        if self._target:
+            return self._target()
+        return None
+
+    @property
+    def label(self):
+        if self.target:
+            return self.target.name
+        return self._label
 
     def __str__(self):
         return f'b{self.condition} {self.label}'
@@ -366,10 +445,13 @@ class BLE(Branch):
     condition = 'le'
 
 
-@dataclass
 class CMP(Instruction):
     rn: Register
     rm: Operand
+
+    def __init__(self, rn: Register, rm: Register):
+        self.rn = rn
+        self.rm = rm
 
     def __str__(self):
         return f'cmp {self.rn}, {self.rm}'
@@ -378,10 +460,13 @@ class CMP(Instruction):
         return str(self)
 
 
-@dataclass
 class CMN(Instruction):
     rn: Register
     rm: Operand
+
+    def __init__(self, rn: Register, rm: Register):
+        self.rn = rn
+        self.rm = rm
 
     def __str__(self):
         return f'cmn {self.rn}, {self.rm}'
@@ -390,10 +475,13 @@ class CMN(Instruction):
         return str(self)
 
 
-@dataclass
 class MOV(Instruction):
     rd: Register
     rm: Operand
+
+    def __init__(self, rd: Register, rm: Register):
+        self.rd = rd
+        self.rm = rm
 
     def __str__(self):
         return f'mov {self.rd}, {self.rm}'
@@ -402,9 +490,11 @@ class MOV(Instruction):
         return str(self)
 
 
-@dataclass
 class Directive(Instruction):
     text: str
+
+    def __init__(self, text: str):
+        self.text = text
 
     def __str__(self):
         return self.text
@@ -413,15 +503,22 @@ class Directive(Instruction):
         return str(self)
 
 
-@dataclass
 class Function(ASTNode):
     name: str
     instructions: List[Instruction]
+    labels: List[LABEL]
+
+    def __init__(self, name: str, instructions: List[Instruction]):
+        self.name = name
+        self.instructions = instructions
+        self.labels = []
 
 
-@dataclass
 class ASMFile(ASTNode):
     functions: List[Function]
+
+    def __init__(self, functions: List[Function]):
+        self.functions = functions
 
 
 class ASTGenerator(ASMVisitor):
@@ -651,6 +748,21 @@ class ASTGenerator(ASMVisitor):
         return Directive('')
 
 
+def link_instructions(asmfile: ASMFile):
+    for function in asmfile.functions:
+        prev_insn: Optional[Instruction] = None
+        for instruction in function.instructions:
+            if prev_insn is not None:
+                instruction._prev = ref(prev_insn)
+                prev_insn._next = ref(instruction)
+            prev_insn = instruction
+            if isinstance(instruction, Branch):
+                for label in function.instructions:
+                    if isinstance(label, LABEL):
+                        if label.name == instruction.label:
+                            instruction._target = ref(label)
+
+
 class ASTVisitor:
     def visit(self, node: ASTNode):
         name = type(node).__name__
@@ -795,6 +907,68 @@ class ASTVisitor:
         return self.instruction(directive)
 
 
+class CollectLabels(ASTVisitor):
+    current_function: Function
+
+    def visit_function(self, function: Function):
+        self.current_function = function
+        super(CollectLabels, self).visit_function(function)
+
+    def visit_label(self, label: LABEL):
+        self.current_function.labels.append(label)
+
+
+class ClassifyLabels(ASTVisitor):
+    current_function: Function
+
+    def visit_function(self, function: Function):
+        self.current_function = function
+        super(ClassifyLabels, self).visit_function(function)
+
+    def visit_label(self, label: LABEL):
+        if isinstance(label.next, DATA):
+            label.type = LabelType.DATA
+
+    def branch(self, branch: Branch):
+        branch.target.type = LabelType.CODE
+
+    def visit_data(self, data: DATA):
+        for label in self.current_function.labels:
+            if label.name == data.data:
+                label.type = LabelType.CASE
+                data._target = ref(label)
+
+
+class RenameLabels(ASTVisitor):
+    ncode = 0
+    ndata = 0
+    ncase = 0
+    nother = 0
+    nfunction = 0
+
+    def visit_function(self, function: Function):
+        self.ncode = 0
+        self.ndata = 0
+        self.ncase = 0
+        self.nother = 0
+        super(RenameLabels, self).visit_function(function)
+        self.nfunction += 1
+
+    def visit_label(self, label: LABEL):
+        if label.type == LabelType.CODE:
+            label.name = f'_code{self.nfunction}_{self.ncode}'
+            self.ncode += 1
+        if label.type == LabelType.CASE:
+            label.name = f'_case{self.nfunction}_{self.ncase}'
+            self.ncase += 1
+        if label.type == LabelType.DATA:
+            label.name = f'_data{self.nfunction}_{self.ndata}'
+            self.ndata += 1
+        if label.type == LabelType.OTHER:
+            label.name = f'_other{self.nfunction}_{self.nother}'
+            self.nother += 1
+
+
 class ASTDump(ASTVisitor):
     file: TextIO
 
@@ -802,20 +976,19 @@ class ASTDump(ASTVisitor):
         self.file = file
 
     def visit_function(self, function: Function):
-        self.file.write(f'\tthumb_func_start {function.name}\n{function.name}:\n')
+        self.file.write(f'\n\tthumb_func_start {function.name}\n{function.name}:\n')
         super(ASTDump, self).visit_function(function)
 
     def visit_label(self, label: LABEL):
         self.file.write(f'{label.name}:\n')
-        pass
 
     def instruction(self, instruction: Instruction):
         self.file.write(f'\t{instruction}\n')
 
 
-if __name__ == '__main__':
-    tree, successful = parse('test2.s')
-    file = ASTGenerator().visit(tree)
-    with open('out.s', 'w') as outfile:
-        ASTDump(outfile).visit(file)
-    pass
+def generate_ast(tree: ASMParser.AsmfileContext) -> ASMFile:
+    ast = ASTGenerator().visit(tree)
+    link_instructions(ast)
+    CollectLabels().visit(ast)
+    ClassifyLabels().visit(ast)
+    return ast

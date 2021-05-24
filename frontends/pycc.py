@@ -3,7 +3,7 @@
 import subprocess
 import os
 import argparse
-from parser import parse, ASTGenerator, ASTDump
+from parser import parse, generate_ast, RenameLabels, ASTDump
 
 parser = argparse.ArgumentParser(description='Simplified CC1 frontend')
 
@@ -58,7 +58,8 @@ else:
 tree, success = parse(args.destination + '.tmp')
 if not success:
     raise ValueError('bad input file')
-ast = ASTGenerator().visit(tree)
+ast = generate_ast(tree)
+RenameLabels().visit(ast)
 with open(args.destination, 'w') as f_dst:
     ASTDump(f_dst).visit(ast)
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import argparse
-from parser import parse, ASTGenerator, ASTDump
+from parser import parse, generate_ast, RenameLabels, ASTDump
 
 parser = argparse.ArgumentParser(description='Simplified "compiler" frontend, cats any input')
 
@@ -17,6 +17,7 @@ source = remainder[-1]
 tree, success = parse(source)
 if not success:
     raise ValueError('bad input file')
-ast = ASTGenerator().visit(tree)
+ast = generate_ast(tree)
+RenameLabels().visit(ast)
 with open(args.destination, 'w') as f_dst:
     ASTDump(f_dst).visit(ast)
