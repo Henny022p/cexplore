@@ -68,7 +68,7 @@ class Constant(Operand):
     value: int
 
     def __init__(self, value: str):
-        self.value = int(value[1:], 0)
+        self.value = int(value, 0)
 
     def __str__(self):
         return f'#{self.value:#x}'
@@ -87,8 +87,8 @@ class ASTNode:
 
 
 class Instruction(ASTNode):
-    _prev: Optional[ref]
-    _next: Optional[ref]
+    _prev: Optional[ref] = None
+    _next: Optional[ref] = None
 
     @property
     def prev(self) -> Optional['Instruction']:
@@ -133,10 +133,12 @@ class LabelType(Enum):
 class LABEL(Instruction):
     name: str
     type: LabelType
+    loads: List['LDR_PC']
 
     def __init__(self, name: str):
         self.name = name
         self.type = LabelType.OTHER
+        self.loads = []
 
     def __str__(self):
         return f'{self.name}:'
@@ -272,18 +274,37 @@ class ASR(Operation):
 
 class LDR_PC(Instruction):
     rt: Register
-    label: str
+    _label: str
+    offset: int = 0
     size: int = 4
     signed: bool = False
+    _target: Optional[ref]
 
-    def __init__(self, rt: Register, label: str, size: int = 4, signed: bool = False):
+    def __init__(self, rt: Register, label: str, offset: int = 0, size: int = 4, signed: bool = False):
         self.rt = rt
-        self.label = label
+        self._label = label
+        self.offset = offset
         self.size = size
         self.signed = signed
+        self._target = None
+
+    @property
+    def target(self) -> Optional[LABEL]:
+        if self._target:
+            return self._target()
+        return None
+
+    @property
+    def label(self) -> str:
+        if self.target:
+            return self.target.name
+        return self._label
 
     def __str__(self):
-        return f'ldr{suffix("s", self.signed)}{suffix("b", self.size == 1)}{suffix("h", self.size == 2)} {self.rt}, {self.label}'
+        text = f'ldr{suffix("s", self.signed)}{suffix("b", self.size == 1)}{suffix("h", self.size == 2)} {self.rt}, {self.label}'
+        if self.offset != 0:
+            text += f'+{self.offset:#x}'
+        return text
 
     def __repr__(self):
         return str(self)
@@ -526,7 +547,7 @@ class ASTGenerator(ASMVisitor):
         return Register(ctx.REG().symbol.text)
 
     def visitImm(self, ctx: ASMParser.ImmContext):
-        return Constant(ctx.IMM().symbol.text)
+        return Constant(ctx.NUM().symbol.text)
 
     def visitAsmfile(self, ctx: ASMParser.AsmfileContext):
         functions = []
@@ -634,6 +655,9 @@ class ASTGenerator(ASMVisitor):
     def visitLdr_pc(self, ctx: ASMParser.Ldr_pcContext):
         rt = self.visit(ctx.rt)
         label = ctx.target.text
+        if ctx.offset:
+            offset = int(ctx.offset.text, 0)
+            return LDR_PC(rt, label, offset)
         return LDR_PC(rt, label)
 
     def ldr(self, ctx, size: int = 4, signed: bool = False):
@@ -761,6 +785,12 @@ def link_instructions(asmfile: ASMFile):
                     if isinstance(label, LABEL):
                         if label.name == instruction.label:
                             instruction._target = ref(label)
+            if isinstance(instruction, LDR_PC):
+                for label in function.instructions:
+                    if isinstance(label, LABEL):
+                        if label.name == instruction.label:
+                            instruction._target = ref(label)
+                            label.loads.append(instruction)
 
 
 class ASTVisitor:
@@ -967,6 +997,28 @@ class RenameLabels(ASTVisitor):
         if label.type == LabelType.OTHER:
             label.name = f'_other{self.nfunction}_{self.nother}'
             self.nother += 1
+
+
+def merge_data_labels(ast: ASMFile):
+    for function in ast.functions:
+        instruction = function.instructions[0]
+        current_data: Optional[LABEL] = None
+        ndata = 0
+        while instruction is not None:
+            if isinstance(instruction, LABEL):
+                if instruction.type == LabelType.DATA:
+                    if current_data:
+                        for load in instruction.loads:
+                            load._target = ref(current_data)
+                            load.offset += ndata * 4
+                    else:
+                        current_data = instruction
+            elif isinstance(instruction, DATA):
+                ndata += 1
+            else:
+                current_data = None
+                ndata = 0
+            instruction = instruction.next
 
 
 class ASTDump(ASTVisitor):

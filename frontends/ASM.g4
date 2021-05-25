@@ -60,7 +60,7 @@ bgt: BGT target=WORD;
 ble: BLE target=WORD;
 
 ldr: ldr_pc | ldr_offset | ldrh_offset | ldrsh_offset | ldrb_offset | ldrsb_offset;
-ldr_pc: LDR rt=reg COMMA target=WORD;
+ldr_pc: LDR rt=reg COMMA target=WORD ('+' offset=NUM)?;
 ldr_offset: LDR rt=reg COMMA '[' rn=reg (COMMA rm=regimm)? ']';
 ldrh_offset: LDRH rt=reg COMMA '[' rn=reg (COMMA rm=regimm)? ']';
 ldrsh_offset: LDRSH rt=reg COMMA '[' rn=reg (COMMA rm=regimm)? ']';
@@ -75,25 +75,25 @@ cmp: CMP rn=reg COMMA rm=regimm;
 cmn: CMN rn=reg COMMA rm=regimm;
 
 directive: align | data | include | syntax | dir_code | dir_gcc | dir_size;
-align: '.align' WORD COMMA WORD;
+align: '.align' NUM COMMA NUM;
 
-dir_code: '.code' WORD;
+dir_code: '.code' NUM;
 dir_gcc: '.gcc2_compiled.:' WORD;
 dir_size: '.size' WORD COMMA WORD;
 
 data: data1 | data2 | data4;
-data1: DATA1 const=WORD;
-data2: DATA2 const=WORD;
-data4: DATA4 const=WORD;
+data1: DATA1 const=(WORD | NUM);
+data2: DATA2 const=(WORD | NUM);
+data4: DATA4 const=(WORD | NUM);
 
 include: '.include' '"' path '"';
 path: '/'? WORD (('/' | '\\')? WORD)+;
 
 syntax: '.syntax' ('divided' | 'unified');
 
-regimm: reg|imm;
+regimm: reg | imm;
 reg: REG;
-imm: IMM;
+imm: '#' NUM;
 
 PUSH: 'push';
 POP: 'pop';
@@ -146,7 +146,7 @@ DATA4: '.4byte' | '.word';
 
 COMMA: ',';
 REG: ('r' [0-9]) | 'lr' | 'pc' | 'sl' | 'sb' | 'ip' | 'sp';
-IMM: '#' '-'? '0x'? [0-9a-fA-F]+;
+NUM: '-'? '0x'? [0-9a-fA-F]+;
 COMMENT: ('@' .*? NL) -> skip;
 WORD: [A-Za-z0-9._-]+;
 WS: (' ' | '\t') -> skip;
