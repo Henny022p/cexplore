@@ -2,7 +2,7 @@ import antlr4
 from antlr.ASMLexer import ASMLexer
 from antlr.ASMParser import ASMParser
 from antlr.ASMVisitor import ASMVisitor
-from typing import List, Optional, TextIO
+from typing import List, Optional, TextIO, Union
 from weakref import ref
 from enum import Enum
 
@@ -156,10 +156,10 @@ class LABEL(Instruction):
 
 class DATA(Instruction):
     size: int
-    data: str
+    data: Union[str, int]
     _target: Optional[ref]
 
-    def __init__(self, size: int, data: str):
+    def __init__(self, size: int, data: Union[str, int]):
         self.size = size
         self.data = data
         self._target = None
@@ -173,6 +173,8 @@ class DATA(Instruction):
     def __str__(self):
         if self.target:
             return f'.{self.size}byte {self.target.name}'
+        if isinstance(self.data, int):
+            return f'.{self.size}byte {self.data:#x}'
         return f'.{self.size}byte {self.data}'
 
     def __repr__(self):
@@ -593,14 +595,23 @@ class ASTGenerator(ASMVisitor):
     def visitLabel(self, ctx: ASMParser.LabelContext):
         return LABEL(ctx.name.text)
 
-    def visitData1(self, ctx: ASMParser.Data1Context):
+    def visitData1word(self, ctx: ASMParser.Data1wordContext):
         return DATA(1, ctx.const.text)
 
-    def visitData2(self, ctx: ASMParser.Data2Context):
+    def visitData2word(self, ctx: ASMParser.Data2wordContext):
         return DATA(2, ctx.const.text)
 
-    def visitData4(self, ctx: ASMParser.Data4Context):
+    def visitData4word(self, ctx: ASMParser.Data4wordContext):
         return DATA(4, ctx.const.text)
+
+    def visitData1num(self, ctx: ASMParser.Data1numContext):
+        return DATA(1, int(ctx.const.text, 0))
+
+    def visitData2num(self, ctx: ASMParser.Data2numContext):
+        return DATA(2, int(ctx.const.text, 0))
+
+    def visitData4num(self, ctx: ASMParser.Data4numContext):
+        return DATA(4, int(ctx.const.text, 0))
 
     def operation(self, ctx, cls):
         rd = self.visit(ctx.rd)

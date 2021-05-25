@@ -81,10 +81,13 @@ dir_code: '.code' NUM;
 dir_gcc: '.gcc2_compiled.:' WORD;
 dir_size: '.size' WORD COMMA WORD;
 
-data: data1 | data2 | data4;
-data1: DATA1 const=(WORD | NUM);
-data2: DATA2 const=(WORD | NUM);
-data4: DATA4 const=(WORD | NUM);
+data: data1word | data2word | data4word | data1num | data2num | data4num;
+data1word: DATA1 const=WORD;
+data2word: DATA2 const=WORD;
+data4word: DATA4 const=WORD;
+data1num: DATA1 const=NUM;
+data2num: DATA2 const=NUM;
+data4num: DATA4 const=NUM;
 
 include: '.include' '"' path '"';
 path: '/'? WORD (('/' | '\\')? WORD)+;
