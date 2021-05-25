@@ -21,7 +21,8 @@ def suffix(suffix: str, condition: bool) -> str:
 
 
 class Operand:
-    pass
+    def __bool__(self):
+        return False
 
 
 class Register(Operand):
@@ -63,6 +64,9 @@ class Register(Operand):
             return self.number == other.number
         return False
 
+    def __bool__(self):
+        return True
+
 
 class Constant(Operand):
     value: int
@@ -80,6 +84,9 @@ class Constant(Operand):
         if isinstance(other, Constant):
             return self.value == other.value
         return False
+
+    def __bool__(self):
+        return self.value != 0
 
 
 class ASTNode:
@@ -326,7 +333,7 @@ class LDR(Instruction):
 
     def __str__(self):
         return f'ldr{suffix("s", self.signed)}{suffix("b", self.size == 1)}{suffix("h", self.size == 2)} {self.rt}, ' \
-               f'[{self.rn}{suffix(", ", self.rm is not None)}{suffix(str(self.rm), self.rm is not None)}]'
+               f'[{self.rn}{suffix(", ", self.rm)}{suffix(str(self.rm), self.rm)}]'
 
     def __repr__(self):
         return str(self)
@@ -346,7 +353,7 @@ class STR(Instruction):
 
     def __str__(self):
         return f'str{suffix("b", self.size == 1)}{suffix("h", self.size == 2)} {self.rt}, ' \
-               f'[{self.rn}{suffix(", ", self.rm is not None)}{suffix(str(self.rm), self.rm is not None)}]'
+               f'[{self.rn}{suffix(", ", self.rm)}{suffix(str(self.rm), self.rm)}]'
 
     def __repr__(self):
         return str(self)
