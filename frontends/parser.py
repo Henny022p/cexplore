@@ -24,6 +24,9 @@ class Operand:
     def __bool__(self):
         return False
 
+    def __repr__(self):
+        return str(self)
+
 
 class Register(Operand):
     number: int
@@ -46,7 +49,7 @@ class Register(Operand):
         else:
             raise ValueError(f'bad register {text}')
 
-    def __str__(self):
+    def __repr__(self):
         if self.number <= 12:
             return f'r{self.number}'
         if self.number == 13:
@@ -55,9 +58,6 @@ class Register(Operand):
             return 'lr'
         if self.number == 15:
             return 'pc'
-
-    def __repr__(self):
-        return str(self)
 
     def __eq__(self, other):
         if isinstance(other, Register):
@@ -77,11 +77,8 @@ class Constant(Operand):
         else:
             self.value = value
 
-    def __str__(self):
-        return f'#{self.value:#x}'
-
     def __repr__(self):
-        return str(self)
+        return f'#{self.value:#x}'
 
     def __eq__(self, other):
         if isinstance(other, Constant):
@@ -124,13 +121,10 @@ class Operation(Instruction):
         self.rn = rn
         self.rm = rm
 
-    def __str__(self):
+    def __repr__(self):
         if self.rd == self.rn:
             return f'{self.mnemonic} {self.rd}, {self.rm}'
         return f'{self.mnemonic} {self.rd}, {self.rn}, {self.rm}'
-
-    def __repr__(self):
-        return str(self)
 
 
 class LabelType(Enum):
@@ -150,11 +144,8 @@ class LABEL(Instruction):
         self.type = LabelType.OTHER
         self.loads = []
 
-    def __str__(self):
-        return f'{self.name}:'
-
     def __repr__(self):
-        return str(self)
+        return f'{self.name}:'
 
 
 class DATA(Instruction):
@@ -173,15 +164,12 @@ class DATA(Instruction):
             return self._target()
         return None
 
-    def __str__(self):
+    def __repr__(self):
         if self.target:
             return f'.{self.size}byte {self.target.name}'
         if isinstance(self.data, int):
             return f'.{self.size}byte {self.data:#x}'
         return f'.{self.size}byte {self.data}'
-
-    def __repr__(self):
-        return str(self)
 
 
 class PUSH(Instruction):
@@ -190,11 +178,8 @@ class PUSH(Instruction):
     def __init__(self, registers: List[Register]):
         self.registers = registers
 
-    def __str__(self):
-        return f'push {{{", ".join([str(reg) for reg in self.registers])}}}'
-
     def __repr__(self):
-        return str(self)
+        return f'push {{{", ".join([str(reg) for reg in self.registers])}}}'
 
 
 class POP(Instruction):
@@ -203,11 +188,8 @@ class POP(Instruction):
     def __init__(self, registers: List[Register]):
         self.registers = registers
 
-    def __str__(self):
-        return f'pop {{{", ".join([str(reg) for reg in self.registers])}}}'
-
     def __repr__(self):
-        return str(self)
+        return f'pop {{{", ".join([str(reg) for reg in self.registers])}}}'
 
 
 class ADD(Operation):
@@ -226,11 +208,8 @@ class NEG(Instruction):
         self.rd = rd
         self.rm = rm
 
-    def __str__(self):
-        return f'neg {self.rd}, {self.rm}'
-
     def __repr__(self):
-        return str(self)
+        return f'neg {self.rd}, {self.rm}'
 
 
 class MUL(Instruction):
@@ -245,15 +224,12 @@ class MUL(Instruction):
         self.rn = rn
         self.rm = rm
 
-    def __str__(self):
+    def __repr__(self):
         if self.rd == self.rn:
             return f'mul {self.rd}, {self.rm}'
         if self.rd == self.rm:
             return f'mul {self.rd}, {self.rn}'
         return f'mul {self.rd}, {self.rn}, {self.rm}'
-
-    def __repr__(self):
-        return str(self)
 
 
 class AND(Operation):
@@ -312,56 +288,47 @@ class LDR_PC(Instruction):
             return self.target.name
         return self._label
 
-    def __str__(self):
+    def __repr__(self):
         text = f'ldr{suffix("s", self.signed)}{suffix("b", self.size == 1)}{suffix("h", self.size == 2)} {self.rt}, {self.label}'
         if self.offset != 0:
             text += f'+{self.offset:#x}'
         return text
 
-    def __repr__(self):
-        return str(self)
-
 
 class LDR(Instruction):
     rt: Register
     rn: Register
-    rm: Optional[Register]
+    rm: Optional[Operand]
     size: int = 4
     signed: bool = False
 
-    def __init__(self, rt: Register, rn: Register, rm: Optional[Register], size: int = 4, signed: bool = False):
+    def __init__(self, rt: Register, rn: Register, rm: Optional[Operand], size: int = 4, signed: bool = False):
         self.rt = rt
         self.rn = rn
         self.rm = rm
         self.size = size
         self.signed = signed
 
-    def __str__(self):
+    def __repr__(self):
         return f'ldr{suffix("s", self.signed)}{suffix("b", self.size == 1)}{suffix("h", self.size == 2)} {self.rt}, ' \
                f'[{self.rn}{suffix(", ", self.rm)}{suffix(str(self.rm), self.rm)}]'
-
-    def __repr__(self):
-        return str(self)
 
 
 class STR(Instruction):
     rt: Register
     rn: Register
-    rm: Optional[Register]
+    rm: Optional[Operand]
     size: int = 4
 
-    def __init__(self, rt: Register, rn: Register, rm: Optional[Register], size: int = 4):
+    def __init__(self, rt: Register, rn: Register, rm: Optional[Operand], size: int = 4):
         self.rt = rt
         self.rn = rn
         self.rm = rm
         self.size = size
 
-    def __str__(self):
+    def __repr__(self):
         return f'str{suffix("b", self.size == 1)}{suffix("h", self.size == 2)} {self.rt}, ' \
                f'[{self.rn}{suffix(", ", self.rm)}{suffix(str(self.rm), self.rm)}]'
-
-    def __repr__(self):
-        return str(self)
 
 
 class BL(Instruction):
@@ -370,11 +337,8 @@ class BL(Instruction):
     def __init__(self, function: str):
         self.function = function
 
-    def __str__(self):
-        return f'bl {self.function}'
-
     def __repr__(self):
-        return str(self)
+        return f'bl {self.function}'
 
 
 class BX(Instruction):
@@ -383,11 +347,8 @@ class BX(Instruction):
     def __init__(self, rm: Register):
         self.rm = rm
 
-    def __str__(self):
-        return f'bx {self.rm}'
-
     def __repr__(self):
-        return str(self)
+        return f'bx {self.rm}'
 
 
 class Branch(Instruction):
@@ -411,11 +372,8 @@ class Branch(Instruction):
             return self.target.name
         return self._label
 
-    def __str__(self):
-        return f'b{self.condition} {self.label}'
-
     def __repr__(self):
-        return str(self)
+        return f'b{self.condition} {self.label}'
 
 
 class B(Branch):
@@ -486,11 +444,8 @@ class CMP(Instruction):
         self.rn = rn
         self.rm = rm
 
-    def __str__(self):
-        return f'cmp {self.rn}, {self.rm}'
-
     def __repr__(self):
-        return str(self)
+        return f'cmp {self.rn}, {self.rm}'
 
 
 class CMN(Instruction):
@@ -501,11 +456,8 @@ class CMN(Instruction):
         self.rn = rn
         self.rm = rm
 
-    def __str__(self):
-        return f'cmn {self.rn}, {self.rm}'
-
     def __repr__(self):
-        return str(self)
+        return f'cmn {self.rn}, {self.rm}'
 
 
 class MOV(Instruction):
@@ -516,11 +468,8 @@ class MOV(Instruction):
         self.rd = rd
         self.rm = rm
 
-    def __str__(self):
-        return f'mov {self.rd}, {self.rm}'
-
     def __repr__(self):
-        return str(self)
+        return f'mov {self.rd}, {self.rm}'
 
 
 class Directive(Instruction):
@@ -529,11 +478,8 @@ class Directive(Instruction):
     def __init__(self, text: str):
         self.text = text
 
-    def __str__(self):
-        return self.text
-
     def __repr__(self):
-        return str(self)
+        return self.text
 
 
 class Function(ASTNode):
