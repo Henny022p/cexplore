@@ -87,8 +87,8 @@ class ASTNode:
 
 
 class Instruction(ASTNode):
-    _prev: Optional[ref['Instruction']]
-    _next: Optional[ref['Instruction']]
+    _prev: Optional[ref]
+    _next: Optional[ref]
 
     @property
     def prev(self) -> Optional['Instruction']:
@@ -148,7 +148,7 @@ class LABEL(Instruction):
 class DATA(Instruction):
     size: int
     data: str
-    _target: Optional[ref[LABEL]]
+    _target: Optional[ref]
 
     def __init__(self, size: int, data: str):
         self.size = size
@@ -360,7 +360,7 @@ class BX(Instruction):
 class Branch(Instruction):
     _label: str
     condition: str
-    _target: Optional[ref[LABEL]]
+    _target: Optional[ref]
 
     def __init__(self, label: str):
         self._label = label
