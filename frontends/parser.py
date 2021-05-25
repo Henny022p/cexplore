@@ -71,8 +71,11 @@ class Register(Operand):
 class Constant(Operand):
     value: int
 
-    def __init__(self, value: str):
-        self.value = int(value, 0)
+    def __init__(self, value: Union[str, int]):
+        if isinstance(value, str):
+            self.value = int(value, 0)
+        else:
+            self.value = value
 
     def __str__(self):
         return f'#{self.value:#x}'
@@ -116,7 +119,7 @@ class Operation(Instruction):
     rm: Operand
     mnemonic: str
 
-    def __init__(self, rd: Register, rn: Register, rm: Register):
+    def __init__(self, rd: Register, rn: Register, rm: Operand):
         self.rd = rd
         self.rn = rn
         self.rm = rm
@@ -1038,6 +1041,34 @@ def merge_data_labels(ast: ASMFile):
                 current_data = None
                 ndata = 0
             instruction = instruction.next
+
+
+class PatchInstructions(ASTVisitor):
+    def visit_function(self, function: Function):
+        for i, instruction in enumerate(function.instructions):
+            function.instructions[i] = self.visit(instruction)
+
+    def instruction(self, instruction: Instruction):
+        return instruction
+
+    def visit_add(self, add: ADD):
+        if isinstance(add.rm, Constant):
+            if add.rm.value == 0:
+                return MOV(add.rd, add.rn)
+            elif add.rm.value < 0:
+                return SUB(add.rd, add.rn, Constant(-add.rm.value))
+        return add
+
+    def visit_sub(self, sub: SUB):
+        if isinstance(sub.rm, Constant):
+            if sub.rm.value < 0:
+                return ADD(sub.rd, sub.rn, Constant(-sub.rm.value))
+
+
+def apply_transformations(ast: ASMFile):
+    merge_data_labels(ast)
+    RenameLabels().visit(ast)
+    PatchInstructions().visit(ast)
 
 
 class ASTDump(ASTVisitor):
