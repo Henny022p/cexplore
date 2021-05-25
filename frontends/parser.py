@@ -1063,6 +1063,7 @@ class PatchInstructions(ASTVisitor):
         if isinstance(sub.rm, Constant):
             if sub.rm.value < 0:
                 return ADD(sub.rd, sub.rn, Constant(-sub.rm.value))
+        return sub
 
 
 def apply_transformations(ast: ASMFile):
