@@ -1029,6 +1029,7 @@ def merge_data_labels(ast: ASMFile):
                         for load in instruction.loads:
                             load._target = ref(current_data)
                             load.offset += ndata * 4
+                        instruction.type = LabelType.OTHER
                     else:
                         current_data = instruction
             elif isinstance(instruction, DATA):

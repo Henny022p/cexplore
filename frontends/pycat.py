@@ -18,7 +18,7 @@ tree, success = parse(source)
 if not success:
     raise ValueError('bad input file')
 ast = generate_ast(tree)
-RenameLabels().visit(ast)
 merge_data_labels(ast)
+RenameLabels().visit(ast)
 with open(args.destination, 'w') as f_dst:
     ASTDump(f_dst).visit(ast)
