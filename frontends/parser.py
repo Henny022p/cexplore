@@ -1002,10 +1002,19 @@ def merge_data_labels(ast: ASMFile):
 class PatchInstructions(ASTVisitor):
     def visit_function(self, function: Function):
         news = []
+        prev: Optional[Instruction] = None
         for i, instruction in enumerate(function.instructions):
-            new = self.visit(instruction)
+            new: Optional[Instruction] = self.visit(instruction)
             if new:
+                if prev:
+                    prev._next = ref(new)
+                    new._prev = ref(prev)
+                else:
+                    new._prev = None
+                prev = new
                 news.append(new)
+        if prev:
+            prev._next = None
         function.instructions = news
 
     def instruction(self, instruction: Instruction):
