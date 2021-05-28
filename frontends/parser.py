@@ -1001,8 +1001,12 @@ def merge_data_labels(ast: ASMFile):
 
 class PatchInstructions(ASTVisitor):
     def visit_function(self, function: Function):
+        news = []
         for i, instruction in enumerate(function.instructions):
-            function.instructions[i] = self.visit(instruction)
+            new = self.visit(instruction)
+            if new:
+                news.append(new)
+        function.instructions = news
 
     def instruction(self, instruction: Instruction):
         return instruction
@@ -1020,6 +1024,9 @@ class PatchInstructions(ASTVisitor):
             if sub.rm.value < 0:
                 return ADD(sub.rd, sub.rn, Constant(-sub.rm.value))
         return sub
+
+    def visit_directive(self, directive: Directive):
+        return None
 
 
 def apply_transformations(ast: ASMFile):
