@@ -260,6 +260,10 @@ class ASR(Operation):
     mnemonic = 'asr'
 
 
+class BIC(Operation):
+    mnemonic = 'bic'
+
+
 class LDR_PC(Instruction):
     rt: Register
     _label: str
@@ -619,6 +623,9 @@ class ASTGenerator(ASMVisitor):
     def visitAsr(self, ctx: ASMParser.AsrContext):
         return self.operation(ctx, ASR)
 
+    def visitBic(self, ctx: ASMParser.BicContext):
+        return self.operation(ctx, BIC)
+
     def visitLdr_pc(self, ctx: ASMParser.Ldr_pcContext):
         rt = self.visit(ctx.rt)
         label = ctx.target.text
@@ -830,6 +837,9 @@ class ASTVisitor:
 
     def visit_asr(self, asr: ASR):
         return self.operation(asr)
+
+    def visit_bic(self, bic: BIC):
+        return self.operation(bic)
 
     def visit_ldr_pc(self, ldr_pc: LDR_PC):
         return self.instruction(ldr_pc)
