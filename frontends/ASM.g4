@@ -74,12 +74,14 @@ strb_offset: STRB rt=reg COMMA '[' rn=reg (COMMA rm=regimm)? ']';
 cmp: CMP rn=reg COMMA rm=regimm;
 cmn: CMN rn=reg COMMA rm=regimm;
 
-directive: align | data | include | syntax | dir_code | dir_gcc | dir_size;
+directive: align | data | include | syntax | dir_code | dir_gcc | dir_size | dir_file | dir_loc;
 align: '.align' NUM COMMA NUM;
 
 dir_code: '.code' NUM;
 dir_gcc: '.gcc2_compiled.:' WORD;
 dir_size: '.size' WORD COMMA WORD;
+dir_file: '.file' file_id=NUM '"' file_path=WORD '"';
+dir_loc: '.loc' file_id=NUM file_line=NUM file_column=NUM;
 
 data: data1word | data2word | data4word | data1num | data2num | data4num;
 data1word: DATA1 const=WORD;

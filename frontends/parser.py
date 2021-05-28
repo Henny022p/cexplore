@@ -738,6 +738,11 @@ class ASTGenerator(ASMVisitor):
     def visitDir_size(self, ctx: ASMParser.Dir_sizeContext):
         return Directive('')
 
+    def visitDir_file(self, ctx: ASMParser.Dir_fileContext):
+        return Directive(f'.file {ctx.file_id.text} "{ctx.file_path.text}"')
+
+    def visitDir_loc(self, ctx: ASMParser.Dir_locContext):
+        return Directive(f'.loc {ctx.file_id.text} {ctx.file_line.text} {ctx.file_column.text}')
 
 def link_instructions(asmfile: ASMFile):
     for function in asmfile.functions:

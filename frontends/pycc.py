@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from parse_debug import process_debug_info
 import subprocess
 import os
 import argparse
@@ -50,10 +51,13 @@ cpp_args += [source, "-o", source + ".i"]
 subprocess.call(cpp_args)
 if args.preproc and args.charmap:
     pprocess = subprocess.Popen([args.preproc, source + '.i', args.charmap], stdout=subprocess.PIPE)
-    subprocess.call([args.cc1] + ['-o', args.destination + '.tmp'] + thing, stdin=pprocess.stdout)
+    subprocess.call([args.cc1] + ['-o', args.destination + '.tmp', '-g'] + thing, stdin=pprocess.stdout)
 else:
     with open(source + '.i', 'r') as a:
-        subprocess.call([args.cc1] + ['-o', args.destination + '.tmp'] + thing, stdin=a)
+        subprocess.call([args.cc1] + ['-o', args.destination + '.tmp', '-g'] + thing, stdin=a)
+
+# Preprocess debug information
+process_debug_info(args.destination + '.tmp')
 
 tree, success = parse(args.destination + '.tmp')
 if not success:
