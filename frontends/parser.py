@@ -1030,9 +1030,9 @@ class PatchInstructions(ASTVisitor):
 
 
 def apply_transformations(ast: ASMFile):
+    PatchInstructions().visit(ast)
     merge_data_labels(ast)
     RenameLabels().visit(ast)
-    PatchInstructions().visit(ast)
 
 
 class ASTDump(ASTVisitor):
