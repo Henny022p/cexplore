@@ -65,6 +65,45 @@ def parse_debug_line_section(f):
         assert(arr[0] == '.byte')
         return int(arr[1], 0)
 
+    def read_signed_leb128():
+        line = f.readline().strip()
+        arr = line.split()
+        assert(len(arr) == 2)
+        assert(arr[0] == '.byte')
+
+        result = 0
+        shift = 0
+        arr = arr[1].split(',')
+        for byte in arr:
+            byte = int(byte,0)
+            result |= (byte & 0x7f) << shift
+            shift += 7
+            if byte & 0x80 == 0:
+                break
+
+        if byte & 0x40:
+            result -= (1 << shift)
+
+        return result
+
+    def read_unsigned_leb128():
+        line = f.readline().strip()
+        arr = line.split()
+        assert(len(arr) == 2)
+        assert(arr[0] == '.byte')
+
+        result = 0
+        shift = 0
+        arr = arr[1].split(',')
+        for byte in arr:
+            byte = int(byte,0)
+            result |= (byte & 0x7f) << shift
+            shift += 7
+            if byte & 0x80 == 0:
+                break
+            
+        return result
+
     def read_1_signed_byte():
         return read_1_byte()
 
@@ -116,13 +155,13 @@ def parse_debug_line_section(f):
     cur_file = read_string()
     while cur_file != None:
         files.append(cur_file)
-        # The following information seems to not have been set so far
+        # The following information is not set by agbcc
         # dir
-        read_1_byte()
+        read_unsigned_leb128()
         # time
-        read_1_byte()
+        read_unsigned_leb128()
         # size
-        read_1_byte()
+        read_unsigned_leb128()
 
         cur_file = read_string()
 
