@@ -176,7 +176,7 @@ def parse_debug_line_section(f):
     address = 0
     filename = files[0]
     line = 1
-    column = 0
+    column = 0 # agbcc does not emit column information
     is_stmt = True # TODO?
     end_sequence = False
 
@@ -209,6 +209,16 @@ def parse_debug_line_section(f):
                     break
                 else:
                     raise Exception(f'Unimplemented extended_op {extended_op}')
+
+            elif op_code == DW_LNS_copy:
+                debug_lines.append((address, line))
+            elif op_code == DW_LNS_advance_line:
+                line += read_signed_leb128()
+            elif op_code == DW_LNS_set_file:
+                id = read_unsigned_leb128()
+                # The file and directory tables are 0
+		        # based, the references are 1 based.
+                filename = files[id-1]
             else:
                 raise Exception(f'Unimplemented op_code {op_code}')
     return debug_lines
