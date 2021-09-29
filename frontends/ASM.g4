@@ -72,7 +72,7 @@ store: str_offset | strh_offset | strb_offset;
 str_offset: STR rt=reg COMMA '[' rn=reg (COMMA rm=regimm)? ']';
 strh_offset: STRH rt=reg COMMA '[' rn=reg (COMMA rm=regimm)? ']';
 strb_offset: STRB rt=reg COMMA '[' rn=reg (COMMA rm=regimm)? ']';
-stm: STM rn=reg '!' COMMA reglist;
+stm: (STM|STMIA) rn=reg '!' COMMA reglist;
 
 cmp: CMP rn=reg COMMA rm=regimm;
 cmn: CMN rn=reg COMMA rm=regimm;
@@ -146,6 +146,7 @@ STR: 'str';
 STRH: 'strh';
 STRB: 'strb';
 STM: 'stm';
+STMIA: 'stmia';
 CMP: 'cmp';
 CMN: 'cmn';
 
