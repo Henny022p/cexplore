@@ -87,13 +87,12 @@ dir_size: '.size' WORD COMMA WORD;
 data: data1word | data2word | data4word | data1num | data2num | data4num;
 data1word: DATA1 const=WORD;
 data2word: DATA2 const=WORD;
-data4word: DATA4 const=WORD;
+data4word: DATA4 const=WORD ('+' offset=NUM)?;
 data1num: DATA1 const=NUM;
 data2num: DATA2 const=NUM;
 data4num: DATA4 const=NUM;
 
-include: '.include' '"' path '"';
-path: '/'? WORD (('/' | '\\')? WORD)+;
+include: '.include' STRING;
 
 syntax: '.syntax' ('divided' | 'unified');
 
@@ -101,6 +100,8 @@ reglist: '{' reg (COMMA reg)* '}';
 regimm: reg | imm;
 reg: REG;
 imm: '#' NUM;
+
+STRING: '"' .*? '"';
 
 PUSH: 'push';
 POP: 'pop';

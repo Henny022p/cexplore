@@ -49,7 +49,7 @@ def compile(source, output_filename, args, remainder):
 def process_asm(input_filename, output_filename):
     tree, success = parse(input_filename)
     if not success:
-        raise ValueError('bad input file')
+        raise ValueError('could not parse file')
     ast = generate_ast(tree)
     apply_transformations(ast)
     with open(output_filename, 'w') as destination_file:
@@ -63,6 +63,7 @@ def cleanup(args, source):
 
 
 def main(argv):
+    status_code = 0
     args, remainder = parse_args(argv)
     if args.version:
         git_proc = subprocess.run(['git', '--git-dir=' + args.version + '/.git', 'rev-parse', '--short', 'HEAD'],
@@ -81,11 +82,17 @@ def main(argv):
             asm_file = source
 
         if not args.no_parse:
-            process_asm(asm_file, args.destination)
+            try:
+                process_asm(asm_file, args.destination)
+            except Exception as e:
+                print(f'error cleaning assembly code: {e}\nOutputting unprocessed assembly', file=sys.stderr)
+                copyfile(asm_file, args.destination)
+                status_code = 1
         else:
             copyfile(asm_file, args.destination)
     finally:
         cleanup(args, source)
+    exit(status_code)
 
 
 if __name__ == '__main__':

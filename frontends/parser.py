@@ -153,11 +153,13 @@ class LABEL(Instruction):
 class DATA(Instruction):
     size: int
     data: Union[str, int]
+    offset: Optional[int]
     _target: Optional[ref]
 
-    def __init__(self, size: int, data: Union[str, int]):
+    def __init__(self, size: int, data: Union[str, int], offset: Optional[int] = None):
         self.size = size
         self.data = data
+        self.offset = offset
         self._target = None
 
     @property
@@ -171,7 +173,10 @@ class DATA(Instruction):
             return f'.{self.size}byte {self.target.name}'
         if isinstance(self.data, int):
             return f'.{self.size}byte {self.data:#x}'
-        return f'.{self.size}byte {self.data}'
+        r = f'.{self.size}byte {self.data}'
+        if self.offset:
+            r += f'+{self.offset:#x}'
+        return r
 
 
 class PUSH(Instruction):
@@ -571,7 +576,11 @@ class ASTGenerator(ASMVisitor):
         return DATA(2, ctx.const.text)
 
     def visitData4word(self, ctx: ASMParser.Data4wordContext):
-        return DATA(4, ctx.const.text)
+        if ctx.offset:
+            offset = int(ctx.offset.text, 0)
+        else:
+            offset = None
+        return DATA(4, ctx.const.text, offset)
 
     def visitData1num(self, ctx: ASMParser.Data1numContext):
         return DATA(1, int(ctx.const.text, 0))
