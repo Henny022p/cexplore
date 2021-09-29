@@ -1,10 +1,12 @@
+from enum import Enum
+from typing import List, Optional, TextIO, Union
+from weakref import ref
+
 import antlr4
+
 from antlr.ASMLexer import ASMLexer
 from antlr.ASMParser import ASMParser
 from antlr.ASMVisitor import ASMVisitor
-from typing import List, Optional, TextIO, Union
-from weakref import ref
-from enum import Enum
 
 
 def parse(filename: str) -> (ASMParser.AsmfileContext, bool):
@@ -335,6 +337,18 @@ class STR(Instruction):
                f'[{self.rn}{suffix(", ", self.rm)}{suffix(str(self.rm), self.rm)}]'
 
 
+class STM(Instruction):
+    rn: Register
+    reglist: List[Register]
+
+    def __init__(self, rn: Register, reglist: List[Register]):
+        self.rn = rn
+        self.reglist = reglist
+
+    def __repr__(self):
+        return f'stm {self.rn}!, {{{", ".join([str(reg) for reg in self.reglist])}}}'
+
+
 class BL(Instruction):
     function: str
 
@@ -511,6 +525,12 @@ class ASTGenerator(ASMVisitor):
     def visitImm(self, ctx: ASMParser.ImmContext):
         return Constant(ctx.NUM().symbol.text)
 
+    def visitReglist(self, ctx: ASMParser.ReglistContext):
+        registers = []
+        for register in ctx.reg():
+            registers.append(self.visit(register))
+        return registers
+
     def visitAsmfile(self, ctx: ASMParser.AsmfileContext):
         functions = []
         for function in ctx.function():
@@ -534,15 +554,11 @@ class ASTGenerator(ASMVisitor):
         return ctx.name.text
 
     def visitPush_multiple(self, ctx: ASMParser.Push_multipleContext):
-        registers = []
-        for register in ctx.reg():
-            registers.append(self.visit(register))
+        registers = self.visit(ctx.reglist())
         return PUSH(registers)
 
     def visitPop_multiple(self, ctx: ASMParser.Pop_multipleContext):
-        registers = []
-        for register in ctx.reg():
-            registers.append(self.visit(register))
+        registers = self.visit(ctx.reglist())
         return POP(registers)
 
     def visitLabel(self, ctx: ASMParser.LabelContext):
@@ -669,6 +685,11 @@ class ASTGenerator(ASMVisitor):
 
     def visitStrb_offset(self, ctx: ASMParser.Strb_offsetContext):
         return self.str(ctx, 1)
+
+    def visitStm(self, ctx: ASMParser.StmContext):
+        rn = self.visit(ctx.rn)
+        registers = self.visit(ctx.reglist())
+        return STM(rn, registers)
 
     def visitBl(self, ctx: ASMParser.BlContext):
         return BL(ctx.target.text)
@@ -849,6 +870,9 @@ class ASTVisitor:
 
     def visit_str(self, store: STR):
         return self.instruction(store)
+
+    def visit_stm(self, stm: STM):
+        return self.instruction(stm)
 
     def visit_bl(self, bl: BL):
         return self.instruction(bl)

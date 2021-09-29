@@ -8,13 +8,13 @@ function_header2: align	'.globl' name=WORD '.type' WORD COMMA WORD '.thumb_func'
 
 line: (instruction | directive | label);
 label: name=WORD ':';
-instruction: push | pop | arithmetic | logic | lsl | lsr | asl | asr | bic | mov | branch | ldr | store | cmp | cmn;
+instruction: push | pop | arithmetic | logic | lsl | lsr | asl | asr | bic | mov | branch | ldr | store | stm | cmp | cmn;
 
 push: push_multiple;
-push_multiple: PUSH '{' reg (COMMA reg)* '}';
+push_multiple: PUSH reglist;
 
 pop: pop_multiple;
-pop_multiple: POP '{' reg (COMMA reg)* '}';
+pop_multiple: POP reglist;
 
 arithmetic: add | sub | mul | rsb | neg;
 
@@ -72,6 +72,7 @@ store: str_offset | strh_offset | strb_offset;
 str_offset: STR rt=reg COMMA '[' rn=reg (COMMA rm=regimm)? ']';
 strh_offset: STRH rt=reg COMMA '[' rn=reg (COMMA rm=regimm)? ']';
 strb_offset: STRB rt=reg COMMA '[' rn=reg (COMMA rm=regimm)? ']';
+stm: STM rn=reg '!' COMMA reglist;
 
 cmp: CMP rn=reg COMMA rm=regimm;
 cmn: CMN rn=reg COMMA rm=regimm;
@@ -96,6 +97,7 @@ path: '/'? WORD (('/' | '\\')? WORD)+;
 
 syntax: '.syntax' ('divided' | 'unified');
 
+reglist: '{' reg (COMMA reg)* '}';
 regimm: reg | imm;
 reg: REG;
 imm: '#' NUM;
@@ -143,6 +145,7 @@ LDRSB: 'ldrsb';
 STR: 'str';
 STRH: 'strh';
 STRB: 'strb';
+STM: 'stm';
 CMP: 'cmp';
 CMN: 'cmn';
 
