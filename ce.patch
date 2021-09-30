@@ -143,15 +143,3 @@ index 6c213a16..9b7edc0e 100644
        ul#motd.navbar-nav.navbar-center.mr-auto.community-advert.d-none
          span.content
            | Thanks for using Compiler Explorer
-diff --git a/webpack.config.esm.js b/webpack.config.esm.js
-index 51507114..3d605d66 100644
---- a/webpack.config.esm.js
-+++ b/webpack.config.esm.js
-@@ -48,6 +48,7 @@ const plugins = [
-     new MonacoEditorWebpackPlugin({
-         languages: [ 'cpp', 'go', 'pascal', 'python', 'rust', 'swift', 'java', 'kotlin', 'scala', 'ruby' ],
-         filename: isDev ? '[name].worker.js' : `[name]${webjackJsHack}worker.[contenthash].js`,
-+        globalAPI: true,
-     }),
-     new CopyWebpackPlugin([
-         {
