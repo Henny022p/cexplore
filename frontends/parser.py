@@ -505,6 +505,28 @@ class Directive(Instruction):
         return self.text
 
 
+class FileDirective(Directive):
+    id: int
+    path: str
+
+    def __init__(self, id: int, path: str):
+        super().__init__(f'.file {id} {path}')
+        self.id = id
+        self.path = path
+
+
+class LocDirective(Directive):
+    file: int
+    line: int
+    column: int
+
+    def __init__(self, file: int, line: int, column: int):
+        super().__init__(f'.loc {file} {line} {column}')
+        self.file = file
+        self.line = line
+        self.column = column
+
+
 class Function(ASTNode):
     name: str
     instructions: List[Instruction]
@@ -775,6 +797,17 @@ class ASTGenerator(ASMVisitor):
     def visitDir_size(self, ctx: ASMParser.Dir_sizeContext):
         return Directive('')
 
+    def visitDir_file(self, ctx: ASMParser.Dir_fileContext):
+        id = int(ctx.file_id.text, 0)
+        name = ctx.file_path.text.strip('"')
+        return FileDirective(id, name)
+
+    def visitDir_loc(self, ctx: ASMParser.Dir_locContext):
+        file = int(ctx.file_id.text, 0)
+        line = int(ctx.file_line.text, 0)
+        column = int(ctx.file_column.text, 0)
+        return LocDirective(file, line, column)
+
 
 def link_instructions(asmfile: ASMFile):
     for function in asmfile.functions:
@@ -946,6 +979,12 @@ class ASTVisitor:
     def visit_directive(self, directive: Directive):
         return self.instruction(directive)
 
+    def visit_filedirective(self, file: FileDirective):
+        return self.visit_directive(file)
+
+    def visit_locdirective(self, loc: LocDirective):
+        return self.visit_directive(loc)
+
 
 class CollectLabels(ASTVisitor):
     current_function: Function
@@ -1069,6 +1108,12 @@ class PatchInstructions(ASTVisitor):
 
     def visit_directive(self, directive: Directive):
         return None
+
+    def visit_filedirective(self, file: FileDirective):
+        return file
+
+    def visit_locdirective(self, loc: LocDirective):
+        return loc
 
 
 def apply_transformations(ast: ASMFile):

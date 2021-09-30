@@ -7,7 +7,7 @@ import sys
 from shutil import copyfile
 
 from parser import parse, generate_ast, apply_transformations, ASTDump
-
+from parse_debug import process_debug_info
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description='Simplified CC1 frontend')
@@ -73,11 +73,9 @@ def main(argv):
     source = remainder.pop(-1)
     try:
         if source.endswith('.c'):
-            # disable debug information because the parser can't handle it yet
-            if '-g' in remainder:
-                remainder.remove('-g')
             asm_file = args.destination + '.tmp'
             compile(source, asm_file, args, remainder)
+            process_debug_info(asm_file)
         else:
             asm_file = source
 
