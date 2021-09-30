@@ -510,7 +510,7 @@ class FileDirective(Directive):
     path: str
 
     def __init__(self, id: int, path: str):
-        super().__init__(f'.file {id} {path}')
+        super().__init__(f'.file {id} "{path}"')
         self.id = id
         self.path = path
 
