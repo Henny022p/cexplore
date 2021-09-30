@@ -1,0 +1,157 @@
+diff --git a/static/panes/diff.js b/static/panes/diff.js
+index 2657aaff..d7a34290 100644
+--- a/static/panes/diff.js
++++ b/static/panes/diff.js
+@@ -104,6 +104,11 @@ function Diff(hub, container, state) {
+     this.compilers = {};
+     var root = this.domRoot.find('.monaco-placeholder');
+ 
++
++    this.decorations = {};
++    this.prevDecorations = [];
++    this.linkedFadeTimeoutId = -1;
++
+     this.outputEditor = monaco.editor.createDiffEditor(root[0], {
+         fontFamily: 'Consolas, "Liberation Mono", Courier, monospace',
+         scrollBeyondLastLine: true,
+@@ -269,6 +274,7 @@ Diff.prototype.initCallbacks = function () {
+     this.eventHub.on('executorClose', this.onExecutorClose, this);
+     this.eventHub.on('settingsChange', this.onSettingsChange, this);
+     this.eventHub.on('themeChange', this.onThemeChange, this);
++    this.eventHub.on('panesLinkLine', this.onPanesLinkLine, this);
+     this.container.on('destroy', function () {
+         this.eventHub.unsubscribe();
+         this.outputEditor.dispose();
+@@ -276,6 +282,12 @@ Diff.prototype.initCallbacks = function () {
+     this.container.on('resize', this.resize, this);
+     this.container.on('shown', this.resize, this);
+ 
++
++    this.mouseMoveThrottledFunction = _.throttle(_.bind(this.onMouseMove, this), 50);
++    this.outputEditor.getOriginalEditor().onMouseMove(_.bind(function (e) {
++        this.mouseMoveThrottledFunction(e);
++    }, this));
++
+     this.requestResendResult(this.lhs.id);
+     this.requestResendResult(this.rhs.id);
+ 
+@@ -386,6 +398,7 @@ Diff.prototype.onThemeChange = function (newTheme) {
+ };
+ 
+ Diff.prototype.onSettingsChange = function (newSettings) {
++    this.settings = newSettings;
+     this.outputEditor.updateOptions({
+         minimap: {
+             enabled: newSettings.showMinimap,
+@@ -395,6 +408,86 @@ Diff.prototype.onSettingsChange = function (newSettings) {
+     });
+ };
+ 
++Diff.prototype.onPanesLinkLine = function (compilerId, lineNumber, colBegin, colEnd, revealLine, sender, editorId) {
++    if (Number(compilerId) === this.lhs.id) {
++        var lineNums = [];
++        _.each(this.lhs.result.asm, function (asmLine, i) {
++            if (asmLine.source&& asmLine.source.line === lineNumber) {
++                lineNums.push(i + 1);
++            }
++        });
++        if (revealLine && lineNums[0] &&  sender !== this.getPaneName()) this.outputEditor.getOriginalEditor().revealLineInCenter(lineNums[0]);
++        var lineClass = sender !== this.getPaneName() ? 'linked-code-decoration-line' : '';
++        this.decorations.linkedCode = _.map(lineNums, function (line) {
++            return {
++                range: new monaco.Range(line, 1, line, 1),
++                options: {
++                    isWholeLine: true,
++                    linesDecorationsClassName: 'linked-code-decoration-margin',
++                    className: lineClass,
++                },
++            };
++        });
++        if (this.linkedFadeTimeoutId !== -1) {
++            clearTimeout(this.linkedFadeTimeoutId);
++        }
++        this.linkedFadeTimeoutId = setTimeout(_.bind(function () {
++            this.clearLinkedLines();
++            this.linkedFadeTimeoutId = -1;
++        }, this), 5000);
++        this.updateDecorations();
++    }
++};
++
++Diff.prototype.clearLinkedLines = function () {
++    this.decorations.linkedCode = [];
++    this.updateDecorations();
++};
++
++Diff.prototype.updateDecorations = function () {
++    this.prevDecorations = this.outputEditor.getOriginalEditor().deltaDecorations(
++        this.prevDecorations, _.flatten(_.values(this.decorations)));
++};
++
++Diff.prototype.onMouseMove = function (e) {
++    if (e === null || e.target === null || e.target.position === null) return;
++    var hoverShowSource = this.settings.hoverShowSource === true;
++    if (this.lhs.result && this.lhs.result.asm) {
++        var hoverAsm = this.lhs.result.asm[e.target.position.lineNumber - 1];
++        if (hoverShowSource && hoverAsm) {
++            this.clearLinkedLines();
++            // We check that we actually have something to show at this point!
++            var sourceLine = -1;
++            var sourceColBegin = -1;
++            var sourceColEnd = -1;
++            if (hoverAsm.source) {
++                sourceLine = hoverAsm.source.line;
++                if (hoverAsm.source.column) {
++                    sourceColBegin = hoverAsm.source.column;
++                    sourceColEnd = sourceColBegin;
++                }
++
++                // Ignore different files for now
++                /*var editorId = this.getEditorIdBySourcefile(hoverAsm.source);
++                console.log(editorId);
++                if (editorId) {*/
++                    var editorId = 1;
++                    this.eventHub.emit('editorLinkLine', editorId, sourceLine, sourceColBegin, sourceColEnd, false);
++
++                    this.eventHub.emit('panesLinkLine', this.lhs.id,
++                        sourceLine, sourceColBegin, sourceColEnd,
++                        false, this.getPaneName(), editorId);
++                //}
++            }
++        }
++    }
++};
++
++
++Diff.prototype.getPaneName = function() {
++    return 'Diff';
++}
++
+ module.exports = {
+     Diff: Diff,
+     getComponent: function (lhs, rhs) {
+diff --git a/views/index.pug b/views/index.pug
+index 6c213a16..9b7edc0e 100644
+--- a/views/index.pug
++++ b/views/index.pug
+@@ -50,6 +50,8 @@ block prepend content
+           a.nav-link.ui-presentation-next(href="javascript:;")
+             span.dropdown-icon.fas.fa-forward
+             | Next
++        li.nav-item.dropdown
++            button.btn.btn-light.nav-link(onclick="javascript:var script = document.createElement('script');script.src = 'http://localhost:10241/static/bridge.js';document.body.appendChild(script);") Inject tlh
+       ul#motd.navbar-nav.navbar-center.mr-auto.community-advert.d-none
+         span.content
+           | Thanks for using Compiler Explorer
+diff --git a/webpack.config.esm.js b/webpack.config.esm.js
+index 51507114..3d605d66 100644
+--- a/webpack.config.esm.js
++++ b/webpack.config.esm.js
+@@ -48,6 +48,7 @@ const plugins = [
+     new MonacoEditorWebpackPlugin({
+         languages: [ 'cpp', 'go', 'pascal', 'python', 'rust', 'swift', 'java', 'kotlin', 'scala', 'ruby' ],
+         filename: isDev ? '[name].worker.js' : `[name]${webjackJsHack}worker.[contenthash].js`,
++        globalAPI: true,
+     }),
+     new CopyWebpackPlugin([
+         {
