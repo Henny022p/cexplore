@@ -85,7 +85,7 @@ def main(argv):
             except Exception as e:
                 print(f'error cleaning assembly code: {e}\nOutputting unprocessed assembly', file=sys.stderr)
                 copyfile(asm_file, args.destination)
-                status_code = 1
+                status_code = 0
         else:
             copyfile(asm_file, args.destination)
     finally:

@@ -495,6 +495,18 @@ class MOV(Instruction):
         return f'mov {self.rd}, {self.rm}'
 
 
+class MVN(Instruction):
+    rd: Register
+    rm: Operand
+
+    def __init__(self, rd: Register, rm: Register):
+        self.rd = rd
+        self.rm = rm
+
+    def __repr__(self):
+        return f'mvn {self.rd}, {self.rm}'
+
+
 class Directive(Instruction):
     text: str
 
@@ -788,6 +800,11 @@ class ASTGenerator(ASMVisitor):
         rm = self.visit(ctx.rm)
         return MOV(rd, rm)
 
+    def visitMvn(self, ctx: ASMParser.MovContext):
+        rd = self.visit(ctx.rd)
+        rm = self.visit(ctx.rm)
+        return MVN(rd, rm)
+
     def visitAlign(self, ctx: ASMParser.AlignContext):
         return Directive('.align 2, 0')
 
@@ -975,6 +992,9 @@ class ASTVisitor:
 
     def visit_mov(self, mov: MOV):
         return self.instruction(mov)
+
+    def visit_mvn(self, mvn: MVN):
+        return self.instruction(mvn)
 
     def visit_directive(self, directive: Directive):
         return self.instruction(directive)

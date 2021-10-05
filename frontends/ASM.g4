@@ -8,7 +8,7 @@ function_header2: align	'.globl' name=WORD '.type' WORD COMMA WORD '.thumb_func'
 
 line: (instruction | directive | label);
 label: name=WORD ':';
-instruction: push | pop | arithmetic | logic | lsl | lsr | asl | asr | bic | mov | branch | ldr | store | stm | cmp | cmn;
+instruction: push | pop | arithmetic | logic | lsl | lsr | asl | asr | bic | mov | mvn | branch | ldr | store | stm | cmp | cmn;
 
 push: push_multiple;
 push_multiple: PUSH reglist;
@@ -41,6 +41,7 @@ asr: ASR rd=reg (COMMA rn=reg)? COMMA rm=regimm;
 bic: BIC rd=reg (COMMA rn=reg)? COMMA rm=regimm;
 
 mov: MOV rd=reg COMMA rm=regimm;
+mvn: MVN rd=reg COMMA rm=reg;
 
 branch: b | bl | bx | beq | bne | bhs | blo | bmi | bpl | bvs | bvc | bhi | bls | bge | blt | bgt | ble;
 b: B target=WORD;
@@ -121,6 +122,7 @@ ASL: 'asl' | 'asls';
 ASR: 'asr' | 'asrs';
 BIC: 'bic' | 'bics';
 MOV: 'mov' | 'movs';
+MVN: 'mvn' | 'mvns';
 B: 'b';
 BL: 'bl';
 BX: 'bx';
