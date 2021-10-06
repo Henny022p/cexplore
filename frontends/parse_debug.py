@@ -179,8 +179,8 @@ def parse_debug_line_section(f):
 
     while not end_sequence:
         op_code = read_1_byte()
-        if op_code > opcode_base:
-            # Special operand. 
+        if op_code >= opcode_base:
+            # Special operand.
             adj_opcode = op_code - opcode_base
             # Addresses are always given with labels, so ignore address offset calculation
             # address += (adj_opcode / line_range) * minimum_instruction_length
