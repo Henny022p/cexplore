@@ -6,8 +6,9 @@ import subprocess
 import sys
 from shutil import copyfile
 
-from parser import parse, generate_ast, apply_transformations, ASTDump
 from parse_debug import process_debug_info
+from parser import parse, generate_ast, apply_transformations, ASTDump
+
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description='Simplified CC1 frontend')
@@ -21,6 +22,7 @@ def parse_args(argv):
     parser.add_argument('-o', help='Output Assembly file', required=False, dest='destination')
     parser.add_argument('--no-parse', action='store_true', help='disable parsing of agbcc output (debug option)',
                         required=False)
+    parser.add_argument('--nog', action='store_true', help='disable debug output', required=False)
     return parser.parse_known_args(argv)
 
 
@@ -74,8 +76,11 @@ def main(argv):
     try:
         if source.endswith('.c'):
             asm_file = args.destination + '.tmp'
+            if args.nog:
+                remainder.remove('-g')
             compile(source, asm_file, args, remainder)
-            process_debug_info(asm_file)
+            if not args.nog:
+                process_debug_info(asm_file)
         else:
             asm_file = source
 
