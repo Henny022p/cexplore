@@ -143,3 +143,17 @@ index 6c213a16..9b7edc0e 100644
        ul#motd.navbar-nav.navbar-center.mr-auto.community-advert.d-none
          span.content
            | Thanks for using Compiler Explorer
+diff --git a/static/main.js b/static/main.js
+index 7f7a036f..1798b4e5 100644
+--- a/static/main.js
++++ b/static/main.js
+@@ -504,6 +504,9 @@ function start() {
+         hub = new Hub(layout, subLangId, defaultLangId);
+     }
+
++    // Expose the hub for the tlh bridge.
++    window.hub = hub;
++
+     if (hub.hasTree()) {
+         $('#add-tree').prop('disabled', true);
+     }
